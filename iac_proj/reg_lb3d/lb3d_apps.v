@@ -197,6 +197,11 @@ flibrary RealityGridLB3DApps {
 	       };
 	    };
 	 };
+	 MenuBar {
+	    OpenDialog {
+	       dirMaskCache = "iac_proj/reg_lb3d/colourmaps/*.cmp";
+	    };
+	 };
       };
 
       HDF5.Wr_HDF5_Field Wr_HDF5_Field {
