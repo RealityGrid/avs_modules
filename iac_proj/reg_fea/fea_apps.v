@@ -51,64 +51,52 @@ flibrary RealityGridFEAApps {
 	       child_objs => {
 	       <-.<-.<-.external_faces.out_obj,<-.<-.<-.external_edges.out_obj};
 	    };
-	    Camera {
-	       Camera {
-		  perspec = 1;
-		  front = 1.;
-	       };
-	    };
-	 };
-	 Scene_Editor {
-	    Camera_Editor {
-	       GDcamera_edit {
-		  front = 1.;
-	       };
-	    };
 	 };
       };
       IAC_PROJ.RealityGridFEA.RealityGridFEAMacs.RealityGridFEAReader RealityGridFEAReader {
-	 RealityGridFEAReaderUI {
-	    UImod_panel {
-	       option {
-		  set = 1;
+	 RealityGridSteerer {
+	    RealityGridSteererUI {
+	       UImod_panel {
+		  option {
+		     set = 1;
+		  };
 	       };
-	    };
-	    ConfigUI {
-	       config_frame {
-		  y = 0;
+	       ConfigUI {
+		  config_frame {
+		     y = 0;
+		  };
+		  config_label {
+		     y = 0;
+		  };
+		  name_label {
+		     y = 24;
+		  };
+		  sgs_label {
+		     y = 54;
+		  };
 	       };
-	       config_label {
-		  y = 0;
-	       };
-	       name_label {
-		  y = 24;
-	       };
-	       sgs_label {
-		  y = 54;
-	       };
-	    };
-	    ControlUI {
-	       control_frame {
-		  y = 90;
-	       };
-	       control_label {
-		  y = 0;
-	       };
-	       poll_slider {
-		  y = 24;
-	       };
-	       start_toggle {
-		  y = 84;
-	       };
-	       poll_toggle {
-		  y = 108;
+	       ControlUI {
+		  control_frame {
+		     y = 90;
+		  };
+		  control_label {
+		     y = 0;
+		  };
+		  poll_slider {
+		     y = 24;
+		  };
+		  start_toggle {
+		     y = 84;
+		  };
+		  poll_toggle {
+		     y = 108;
+		  };
 	       };
 	    };
 	 };
       };
       MODS.external_edges external_edges {
 	 in_field => <-.RealityGridFEAReader.outData;
-	 edge_angle = 0.;
       };
       MODS.external_faces external_faces {
 	 in_field => <-.RealityGridFEAReader.outData;
