@@ -1,14 +1,13 @@
 /*-----------------------------------------------------------------------
 
-  This file is part of the RealityGrid AVS Steerer Module.
+  This file is part of the RealityGrid AVS/Express Steerer Module.
 
-  (C) Copyright 2004, University of Manchester, United Kingdom,
+  (C) Copyright 2005, University of Manchester, United Kingdom,
   all rights reserved.
 
-  This software is produced by the Supercomputing, Visualization and
-  e-Science Group, Manchester Computing, University of Manchester
-  as part of the RealityGrid project (http://www.realitygrid.org),
-  funded by the EPSRC under grants GR/R67699/01 and GR/R67699/02.
+  This software was developed by the RealityGrid project
+  (http://www.realitygrid.org), funded by the EPSRC under grants
+  GR/R67699/01 and GR/R67699/02.
 
   LICENCE TERMS
 
@@ -36,7 +35,6 @@
 #include "iac_proj/reg_steer/reg_gen.hxx"
 
 RealityGrid_RealityGridSteeringMod::~RealityGrid_RealityGridSteeringMod() {
-  //printf("*** In RealityGridSteeringMod destructor.\n");
   if((int) initialized) {
     // stop poller
     EVdel_select(EV_TIMEOUT, 0, (void (*)(char*)) poller, NULL, (char*) this, (int) (oldPollInterval * 1000));
@@ -84,6 +82,8 @@ int RealityGrid_RealityGridSteeringMod::init(OMevent_mask event_mask, int seq_nu
       // setup poller
       if(configuration.pollInterval.valid_obj()) {
 	oldPollInterval = (float) configuration.pollInterval;
+	if(oldPollInterval <= 0.0f)
+	  oldPollInterval = 1.0f;
       }
       else {
 	oldPollInterval = 1.0f;
