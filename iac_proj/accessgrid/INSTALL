@@ -1,0 +1,14 @@
+# IAC Project Installation Information - DO NOT EDIT!
+#
+# Insert the following line into the iac_proj/iac_proj.v file
+  "../iac_proj/accessgrid/accessgrid.v" AccessGrid;
+# In the following iac_lib file
+misc.v
+# insert the following line
+  IAC_PROJ.AccessGrid.AccessGridMacs.AccessGridEmitter AccessGridEmitter;
+  IAC_PROJ.AccessGrid.AccessGridMacs.AccessGridViewer3D AccessGridViewer3D;
+  IAC_PROJ.AccessGrid.AccessGridMacs.AccessGridViewer2D AccessGridViewer2D;
+# In the following iac_lib file
+examples.v
+# insert the following line
+  IAC_PROJ.AccessGrid.AccessGridApps AccessGridExamples;

@@ -1,0 +1,12 @@
+# IAC Project Installation Information - DO NOT EDIT!
+#
+# Insert the following line into the iac_proj/iac_proj.v file
+  "../iac_proj/reg_steer/reg_steer.v" RealityGrid;
+# In the following iac_lib file
+data_io.v
+# insert the following line
+  IAC_PROJ.RealityGrid.RealityGridMacs.RealityGridSteerer RealityGridSteerer;
+# In the following iac_lib file
+filters.v
+# insert the following line
+  IAC_PROJ.RealityGrid.RealityGridMacs.RealityGridDataSliceCompositor RealityGridDataSliceCompositor;

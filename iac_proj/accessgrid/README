@@ -1,0 +1,227 @@
+-------------------------------------------------------------------------
+
+  This file is part of the RealityGrid AVS Access Grid Broadcast Module.
+
+  (C) Copyright 2004, University of Manchester, United Kingdom,
+  all rights reserved.
+
+  This software is produced by the Supercomputing, Visualization and
+  e-Science Group, Manchester Computing, University of Manchester
+  as part of the RealityGrid project (http://www.realitygrid.org),
+  funded by the EPSRC under grants GR/R67699/01 and GR/R67699/02.
+
+  LICENCE TERMS
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+  1. Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+
+  THIS MATERIAL IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+  A PARTICULAR PURPOSE ARE DISCLAIMED. THE ENTIRE RISK AS TO THE QUALITY
+  AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE PROGRAM PROVE
+  DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR
+  CORRECTION.
+
+  Author........: Robert Haines
+-------------------------------------------------------------------------
+
+
+RealityGrid AVS Access Grid Broadcast Module.
+---------------------------------------------
+
+Contents:
+  1) Prerequisites:  Read this before installing anything.
+  2) Installation:   How to integrate this module into your AVS/Express
+                     installation.
+  3) User interface: How to configure and control the module.
+  4) Usage:          Common usage scenarios.
+  5) Contacts:       Contact the author.
+
+1) Prerequisites
+----------------
+
+* This AVS module has been produced with the International AVS Centre
+(IAC) project files as a basic framework. To build and use this module
+with the minimum of fuss it is recommended that you download the IAC
+project files. Information about, and a link to, the project files is
+available here: http://www.iavsc.org/repository/pog/index.shtml
+
+Once the project files have been installed, it is simple matter to
+install, build and run AVS with this module.
+
+* The core of the module needs to be linked against the FLXmitter
+library. This is available from CVS from the Futures Laboratory at
+Argonne National Laboratory. The following commands will checkout the
+source tree to a local directory for you:
+$ export CVSROOT=:pserver:anonymous@cvs.mcs.anl.gov:/cvs/fl
+$ cvs co FLXmitter
+
+Follow the instructions in the FLXmitter distribution to build it,
+then build the test-pattern program which isn't built
+automatically. If you can broadcast to the Access Grid using
+test-pattern then you'll be fine with the AVS module.
+
+* FLXmitter has its own dependency: The ADAPTIVE Communication
+Environment (ACE) available here:
+http://www.cs.wustl.edu/~schmidt/ACE.html
+
+There's no point trying to use this AVS module until you can broadcast
+to the Access Grid with test-pattern!
+
+
+2) Installation
+---------------
+
+* Unpack the tar file into your IAC project directory. Eg:
+$ cd <your IAC directory>
+$ tar xjf accessgrid.tar.bz2
+
+* Point FLX_DIR at the location of FLX on your machine. Eg:
+$ export FLX_DIR=/usr/src/misc/FLXmitter
+
+* Point ACE_DIR at the location of ACE on your machine. Eg:
+$ export ACE_DIR=/usr/src/misc/ACE_wrappers
+
+* In the top level of your IAC projects directory run:
+$ ./install.sh
+
+It should report that it has successfully installed the new module.
+
+* Compile AVS/Express with the new module installed. Ensure that
+Express is not running, then do either of the following:
+
+$ base -comp_proc express -exit
+
+or
+
+$ base -gen_proc express -exit
+$ make -f express.mk
+
+* Run your newly compiled version of Express:
+$ ./bin/<ARCH>/express
+
+where <ARCH> is the architecture of your platform, eg. linux, sg6,
+etc.
+
+* You will find three new modules in the IAC library
+(AccessGridEmitter, AccessGridViewer3D and AccessGridViewer2D) and
+also a set of example applications in the usual places.
+
+* There are two loadable applications in the root of the IAC project
+directory (2DMultiWindowAppAG.v and 3DMultiWindowAppAG.v). These
+provide the same functionality as the standard 2DMultiWindowApp and
+3DMultiWindowApp applications respectively, but with the
+AccessGridEmitter module embedded in them ready for use. To use them
+simply load them either at the start of your Express session or from
+the File->Load Application menu option on the main Express window.
+
+3) User Interface
+-----------------
+
+The interface provided by the AccessGridEmitter module has two
+sections: Configuration and Control.
+
+The Configuration section has fields that must be completed before
+starting the broadcast:
+
+* Stream name. This can be any alpha-numeric text. Use it to label
+your stream for easy recognition in vic.
+
+* Address. The broadcast address that the module will emit to. For
+testing purposes you can probably point this at your own machine. The
+default address given is the Access Grid test room (233.2.171.38).
+
+* Port. The port at the broadcast address. The default given is the
+correct port for video streams at the test room.
+
+* TTL. The Time To Live of packets being sent out. Increase this if
+you're sure everything should be working but you aren't seeing video
+at some sites. If you're not seeing video at any site them something
+else is likely to be wrong. The default value of 127 should be
+sufficient for most users.
+
+* Encoder. How to encode the video stream. At the moment only h261 and
+jpeg encodings are supported by the FLXmitter library. The default is
+h261.
+
+The Control section has fields that can be altered while the module is
+broadcasting:
+
+* Connect. Selecting this control will connect the module and
+broadcast the video output to the Access Grid at the address and port
+provided above. De-selecting this button will stop broadcasting.
+
+* Update Interval. This slider allows the user to set how often the
+video output is updated while broadcasting. For example, while set to
+1 (the default), the module will output every frame change to the
+Access Grid. While set to 5 the module will output every 5th frame
+change. This allows the user to trade off between local and remote
+performance of the visualization.
+
+* Stream Quality. Only available while using jpeg encoding, this
+slider allows the user to adjust the quality of the video output. A
+lower number produces a lower quality, and as a result, a lower
+bandwidth requirement.
+
+* Output Format. Some Express modules can output visualizations in
+different formats. This control allows the user to ensure that the
+output from the AccessGridEmitter matches that format. There is a
+choice of ARGB and RGBA formats, of which ARGB is the default.
+
+* Flip horizontally/Flip vertically. These controls allow the user to
+flip the output image. Occasionally, other modules will output flipped
+data. The controls default to off.
+
+* Refresh. Pressing this button will force the module to emit a new
+frame. This is useful if the user has a high Update Interval set and
+wants to reflect changes to the visualization between updates.
+
+* Border Colour. If the visualization to be broadcast is not the exact
+size of an Access Grid stream (352 x 288) then it is scaled. The
+aspect ratio is preserved and any unused area of the stream is blanked
+to the shade of grey (0 == black, 255 == white) specified by this
+slider. The default value is 150.
+
+
+4) Usage
+--------
+
+The easiest way to start using this module is to load one of the
+provided MultiWindowApps: 2DMultiWindowAppAG.v or 3DMultiWindowAppAG.v
+Once you have loaded one of these as a building block you can use them
+as you would the standard MultiWindowApps. An example of this is the
+AccessGridViewerExample which can be found in the EXAMPLES section of
+the IAC library.
+
+Another common starting point is to start a standard
+Single/MultiWindowApp as usual on starting Express and then delete the
+UViewerXD module and replace it with the equivalent AccessGridViewerXD
+module from the IAC library.
+
+The least common method of using the module would be to use the
+AccessGridEmitter module directly. For example, the Read Image module
+can be connected directly to the AccessGridEmitter module. The Refresh
+button might need to be pushed a couple of times before output is seen
+using this method, however.
+
+5) Contacts
+-----------
+
+Robert Haines,
+Supercomputing, Visualization and e-Science,
+Manchester Computing,
+Kilburn Building,
+University of Manchester,
+Oxford Road,
+Manchester,
+M13 9PL,
+United Kingdom
+
+robert.haines@man.ac.uk
