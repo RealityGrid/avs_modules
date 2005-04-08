@@ -36,7 +36,7 @@ flibrary RealityGridMods <
    build_dir="iac_proj/reg_steer",
    out_hdr_file="reg_gen.hxx",
    out_src_file="reg_gen.cxx",
-   link_files="-L$(REG_XML_LIBDIR) -L$(REG_STEER_HOME)/lib32 -lReG_Steer -lxml2",
+   link_files="-L$(REG_XML_LIBDIR) -L$(REG_STEER_LIB) -lReG_Steer -lxml2",
    cxx_src_files="ReGSteerMod.cxx",
    cxx_hdr_files="ReGSteerMod.hxx avs/event.h fld/Xfld.h",
    hdr_dirs="$(REG_STEER_HOME)/include",
