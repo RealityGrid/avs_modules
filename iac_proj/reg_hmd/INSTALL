@@ -1,0 +1,8 @@
+# IAC Project Installation Information - DO NOT EDIT!
+#
+# Insert the following line into the iac_proj/iac_proj.v file
+  "../iac_proj/reg_hmd/reg_hmd.v" RealityGridHMD;
+# In the following iac_lib file
+examples.v
+# insert the following line
+  IAC_PROJ.RealityGridHMD.RealityGridHMDApps.RealityGridHydroExample RealityGridHydroExample;
