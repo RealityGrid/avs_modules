@@ -34,19 +34,12 @@
 -----------------------------------------------------------------------*/
 
 flibrary AccessGridApps {
-   APPS.MultiWindowApp AccessGridViewerExample<NEdisplayMode="maximized"> {
+   APPS.MultiWindowApp AccessGridEmitterExample3D<NEdisplayMode="maximized"> {
       UI {
-	 shell {
-	    x = 10;
-	    y = 27;
-	 };
 	 Modules {
 	    IUI {
 	       optionList {
 		  selectedItem = 0;
-		  cmdList => {
-		     <-.<-.<-.<-.AccessGridViewer3D.AccessGridEmitter.AccessGridEmitterUI.UImod_panel.option,
-		  <-.<-.<-.<-.Read_Geom.read_geom_ui.panel.option};
 	       };
 	       mod_panel {
 		  x = 0;
@@ -55,40 +48,23 @@ flibrary AccessGridApps {
 	    };
 	 };
       };
-      GDM.Uviewer3D AccessGridViewer3D {
-	 Scene<NEx=350.,NEy=66.> {
-	    View {
-	       FieldOutput {
-		  output<NEportLevels={0,4}>;
-	       };
-	       View {
-		  trigger = 2;
-		  output_enabled = 1;
-	       };
-	       ViewUI {
-		  ViewPanel {
-		     UI {
-			panel {
-			   defaultX = 390;
-			   defaultY = 556;
-			   defaultWidth = 358;
-			   defaultHeight = 294;
-			};
-		     };
-		  };
-	       };
-	    };
+      
+      GDM.Uviewer3D Uviewer3D {
+	 Scene {
 	    Top {
 	       child_objs => {
-	       <-.<-.<-.Read_Geom.geom};
+		  <-.<-.<-.Read_Geom.geom
+	       };
 	       Xform {
 		  ocenter = {0.,-0.231161,-0.0594285};
 		  dcenter = {0.,-0.924644,-0.237714};
 		  mat = {
-		     2.86405,1.70183,-3.14844,0.,-1.56859,4.22141,0.854912,0.,
-		     3.2169,0.543227,3.21996,0.,0.,0.,0.,1.
+		     3.56568,-1.3214,-1.24089,0.,1.49547,0.596911,3.66159,0.,
+		     -1.02443,-3.72795,1.02613,0.,0.,0.,0.,1.
 		  };
-		  xlate = {0.,0.924644,0.237714};
+		  xlate = {
+		     0.,0.924644,0.237714
+		  };
 	       };
 	    };
 	    Camera {
@@ -97,86 +73,25 @@ flibrary AccessGridApps {
 		  front = 1.;
 	       };
 	    };
+	    View {
+	       View {
+		  trigger = 1;
+	       };
+	    };
 	 };
-	 Scene_Selector<NEx=140.,NEy=228.>;
-	 Scene_Editor<NEx=350.,NEy=390.> {
+	 Scene_Editor {
 	    Camera_Editor {
 	       GDcamera_edit {
 		  front = 1.;
 	       };
 	    };
 	 };
-	 IAC_PROJ.AccessGrid.AccessGridMacs.AccessGridEmitter AccessGridEmitter {
-	    AccessGridBroadcast {
-	       framebuffer => <-.<-.Scene.View.FieldOutput.output;
-	    };
-	    AccessGridEmitterUI {
-	       ConfigUI {
-		  config_frame {
-		     y = 0;
-		  };
-		  config_label {
-		     y = 0;
-		  };
-		  name_label {
-		     y = 24;
-		  };
-		  address_label {
-		     y = 54;
-		  };
-		  port_label {
-		     y = 84;
-		  };
-		  ttl_label {
-		     y = 114;
-		  };
-		  encoder_menu {
-		     x = 0;
-		     y = 144;
-		  };
-		  src0 {
-		     set = 1;
-		  };
-	       };
-	       ControlUI {
-		  control_frame {
-		     y = 190;
-		  };
-		  control_label {
-		     y = 0;
-		  };
-		  start_toggle {
-		     y = 24;
-		  };
-		  update_slider {
-		     y = 48;
-		  };
-		  quality_slider {
-		     y = 108;
-		  };
-		  format_menu {
-		     x = 0;
-		     y = 168;
-		  };
-		  form0 {
-		     set = 1;
-		  };
-		  flip_h_toggle {
-		     y = 205;
-		  };
-		  flip_v_toggle {
-		     y = 229;
-		  };
-		  refresh_button {
-		     y = 253;
-		  };
-		  colour_slider {
-		     y = 277;
-		  };
-	       };
-	    };
-	 };
       };
+      
+      IAC_PROJ.AccessGrid.AccessGridMacs.AccessGridEmitter AccessGridEmitter {
+	 view_in => <-.Uviewer3D.Scene_Selector.curr_view;
+      };
+   
       MODS.Read_Geom Read_Geom {
 	 read_geom_ui {
 	    panel {
@@ -195,14 +110,14 @@ flibrary AccessGridApps {
 	    filename = "$XP_PATH<0>/data/geom/crambin.geo";
 	 };
       };
-   }; // AccessGridViewerExample
+   }; // AccessGridEmitter3DExample
 
-   APPS.SingleWindowApp AccessGridEmitterExample<NEdisplayMode="maximized"> {
+   APPS.SingleWindowApp AccessGridEmitterExample2D<NEdisplayMode="maximized"> {
       UI {
 	 Modules {
 	    IUI {
 	       optionList {
-		  selectedItem = 0;
+		  selectedItem = 1;
 	       };
 	    };
 	 };
@@ -243,74 +158,7 @@ flibrary AccessGridApps {
 	 };
       };
       IAC_PROJ.AccessGrid.AccessGridMacs.AccessGridEmitter AccessGridEmitter {
-	 AccessGridBroadcast {
-	    framebuffer => <-.<-.Read_Image.field;
-	 };
-	 AccessGridEmitterUI {
-	    ConfigUI {
-	       config_frame {
-		  y = 0;
-	       };
-	       config_label {
-		  y = 0;
-	       };
-	       name_label {
-		  y = 24;
-	       };
-	       address_label {
-		  y = 54;
-	       };
-	       port_label {
-		  y = 84;
-	       };
-	       ttl_label {
-		  y = 114;
-	       };
-	       encoder_menu {
-		  x = 0;
-		  y = 144;
-	       };
-	       src0 {
-		  set = 1;
-	       };
-	    };
-	    ControlUI {
-	       control_frame {
-		  y = 190;
-	       };
-	       control_label {
-		  y = 0;
-	       };
-	       start_toggle {
-		  y = 24;
-	       };
-	       update_slider {
-		  y = 48;
-	       };
-	       quality_slider {
-		  y = 108;
-	       };
-	       colour_slider {
-		  y = 168;
-	       };
-	       format_menu {
-		  x = 0;
-		  y = 228;
-	       };
-	       form0 {
-		  set = 1;
-	       };
-	       flip_h_toggle {
-		  y = 265;
-	       };
-	       flip_v_toggle {
-		  y = 289;
-	       };
-	       refresh_button {
-		  y = 313;
-	       };
-	    };
-	 };
+	 view_in => <-.Uviewer2D.Scene_Selector.curr_view; 
       };
    }; // AccessGridEmitterExample
 }; // AccessGridApps
