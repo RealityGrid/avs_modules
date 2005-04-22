@@ -6,8 +6,6 @@
 misc.v
 # insert the following line
   IAC_PROJ.AccessGrid.AccessGridMacs.AccessGridEmitter AccessGridEmitter;
-  IAC_PROJ.AccessGrid.AccessGridMacs.AccessGridViewer3D AccessGridViewer3D;
-  IAC_PROJ.AccessGrid.AccessGridMacs.AccessGridViewer2D AccessGridViewer2D;
 # In the following iac_lib file
 examples.v
 # insert the following line
