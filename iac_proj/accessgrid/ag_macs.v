@@ -35,10 +35,13 @@
 
 flibrary AccessGridMacs {
    macro AccessGridEmitter {
+
+      GD.Templates.GDview_templ &view_in<NEportLevels={2,1}>;
+      
       IAC_PROJ.AccessGrid.AccessGridMods.AccessGridParams AccessGridParams {
 	 name = "AVS/Express Output";
-	 ipaddress = "233.2.171.38";
-	 port = 42002;
+	 ipaddress = "130.88.1.124";
+	 port = 40000;
 	 ttl = 127;
 	 encoder = 0;
 	 maxfps = 10;
@@ -51,13 +54,14 @@ flibrary AccessGridMacs {
 
       IAC_PROJ.AccessGrid.AccessGridMods.AccessGridBroadcast AccessGridBroadcast {
 	 configuration => <-.AccessGridParams;
-	 framebuffer<NEportLevels={3,0}>;
+	 framebuffer => view_in.output.buffers.framebuffer;
 	 fliph = 0;
 	 flipv = 0;
 	 start = 0;
 	 connected = 0;
 	 frame = 0;
 	 refresh = 0;
+	 view_output => <-.view_in.output_enabled;
       };
 
       macro AccessGridEmitterUI {
@@ -261,7 +265,7 @@ flibrary AccessGridMacs {
 	       do => <-.<-.<-.AccessGridBroadcast.refresh;
 	    };
 	 }; // ControlUI
-      }; // UI
+      }; // UI   
    }; // AccessGridEmitter
 
    GDM.Uviewer3D AccessGridViewer3D {

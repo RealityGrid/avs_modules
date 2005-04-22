@@ -125,6 +125,10 @@ int AccessGrid_AccessGridBroadcast::update(OMevent_mask event_mask, int seq_num)
   char val[64];
   AGBroadcastMod* modInst = (AGBroadcastMod*) ret_class_ptr("AGBroadcastMod");
 
+  if(start.changed(seq_num)) {
+    view_output = (int) start;
+  }
+
   if(configuration.format.changed(seq_num)) {
     modInst->setFormat((int) configuration.format);
     // emit to show change...
@@ -180,7 +184,7 @@ int AccessGrid_AccessGridBroadcast::broadcast(OMevent_mask event_mask, int seq_n
   //if we do have data, do we really want to emit?
   frame = (int) frame + 1;
   if((int) frame >= (int) configuration.updateInterval) frame = 0;
-  if((int)frame != 0) return 0;
+  if((int) frame != 0) return 0;
 
   // get the AGBroadcastMod instance...
   AGBroadcastMod* modInst = (AGBroadcastMod*) ret_class_ptr("AGBroadcastMod");

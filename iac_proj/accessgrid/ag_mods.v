@@ -44,7 +44,7 @@ flibrary AccessGridMods <
    cxx_name="" > {
 
    // define the config parameters group
-   group AccessGridParams <NEportLevels={0,1}> {
+   group AccessGridParams<NEportLevels={0,1}> {
       string name;
       string ipaddress;
       int port;
@@ -69,20 +69,25 @@ flibrary AccessGridMods <
       > {
 	 cxxmethod init(
 	    configuration+read+req,
-	    start+notify+read
+	    connected+read,
+	    start+notify+read+write
 	 );
 	 cxxmethod update(
 	    configuration+notify+read+req,
-	    fliph+notify,
-	    flipv+notify
+	    view_output+read+write,
+	    start+notify+read,
+	    fliph+notify+read,
+	    flipv+notify+read
 	 );
 	 cxxmethod broadcast(
+	    configuration+read+req,
 	    framebuffer+notify+read+req,
-	    refresh+notify
+	    start+read,
+	    frame+read+write,
+	    connected+read,
+	    refresh+notify+read
 	 );
-	 Mesh_Unif+Node_Data &framebuffer<NEportLevels={2,0}> {
-	    //nnodes => prod(.dims);
-	 };
+	 Mesh_Unif+Node_Data &framebuffer<NEportLevels={2,0}>;
 	 AccessGridParams &configuration <NEportLevels={2,0}>;
 	 int fliph;
 	 int flipv;
@@ -90,5 +95,6 @@ flibrary AccessGridMods <
 	 int connected;
 	 int frame;
 	 int refresh;
+	 int view_output;
    };
 };
