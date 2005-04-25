@@ -44,9 +44,9 @@ flibrary AccessGridMacs {
 	 port = 40000;
 	 ttl = 127;
 	 encoder = 0;
-	 maxfps = 10;
+	 maxfps = 24;
 	 maxbandwidth = 512;
-	 quality = 75;
+	 quality = 50;
 	 format = 0;
 	 border = 150;
 	 updateInterval = 1;
@@ -68,203 +68,193 @@ flibrary AccessGridMacs {
 	 UImod_panel UImod_panel {
 	    title = "Access Grid Emitter";
 	    width = 250;
+	    height = 586;
 	 };
 	 
-	 macro ConfigUI {
-	    UIframe config_frame {
-	       parent => <-.<-.UImod_panel;
-	       width = 250;
-	       height = 190;
+	 UIlabel config_title {
+	    parent => <-.UImod_panel;
+	    label = "Configuration";
+	    width => parent.clientWidth;
+	    color {
+	       foregroundColor = "white";
+	       backgroundColor = "blue";
 	    };
-	    UIlabel config_label {
-	       parent => <-.config_frame;
-	       label = "Configuration";
-	       width = 250;
-	       alignment = 1;
-	    };
-	 	 
-	    UIlabel name_label {
-	       parent => <-.config_frame;
-	       label = "Stream name:";
-	       width = 85;
-	       alignment = 2;
-	    };
-	    UItext name_text {
-	       parent => <-.config_frame;
-	       text => <-.<-.<-.AccessGridParams.name;
-	       width = 160;
-	       x => <-.name_label.x + <-.name_label.width;
-	       y => <-.name_label.y;
-	    };
-
-	    UIlabel address_label {
-	       parent => <-.config_frame;
-	       label = "Address:";
-	       width = 85;
-	       alignment = 2;
-	    };
-	    UItext address_text {
-	       parent => <-.config_frame;
-	       text => <-.<-.<-.AccessGridParams.ipaddress;
-	       x => <-.address_label.x + <-.address_label.width;
-	       y => <-.address_label.y;
-	    };
-	    
-	    UIlabel port_label {
-	       parent => <-.config_frame;
-	       label = "Port:";
-	       width = 85;
-	       alignment = 2;
-	    };
-	    UIfield port_field {
-	       parent => <-.config_frame;
-	       value => <-.<-.<-.AccessGridParams.port;
-	       width = 55;
-	       mode = "integer";
-	       x => <-.port_label.x + <-.port_label.width;
-	       y => <-.port_label.y;
-	    };
+	 };
 	 
-	    UIlabel ttl_label {
-	       parent => <-.config_frame;
-	       label = "TTL:";
-	       width = 85;
-	       alignment = 2;
-	    };
-	    UIfield ttl_field {
-	       parent => <-.config_frame;
-	       value => <-.<-.<-.AccessGridParams.ttl;
-	       width = 40;
-	       mode = "integer";
-	       x => <-.ttl_label.x + <-.ttl_label.width;
-	       y => <-.ttl_label.y;
-	    }; 
-
-	    UIoptionMenu encoder_menu {
-	       parent => <-.config_frame;
-	       cmdList => {
-		  <-.src0, <-.src1
-	       };
-	       selectedItem => <-.<-.<-.AccessGridParams.encoder;
-	       label => "Encoder";
-	    };
-	    UIoption src0 {
-	       label => "h261";
-	    };
-	    UIoption src1 {
-	       label => "jpeg";
-	    };
-	 }; // ConfigUI
-
-	 macro ControlUI {
-	    UIframe control_frame {
-	       parent => <-.<-.UImod_panel;
-	       width = 250;
-	       height = 345;
-	    };
-	    UIlabel control_label {
-	       parent => <-.control_frame;
-	       label = "Control";
-	       width = 250;
-	       alignment = 1;
-	    };
-
-	    UItoggle start_toggle {
-	       parent => <-.control_frame;
-	       label = "Connect";
-	       set => <-.<-.<-.AccessGridBroadcast.start;
-	    };
+	 UIlabel name_label {
+	    parent => <-.UImod_panel;
+	    label = "Stream name:";
+	    width = 85;
+	    alignment = 2;
+	 };
+	 UItext name_text {
+	    parent => <-.UImod_panel;
+	    text => <-.<-.AccessGridParams.name;
+	    width = 160;
+	    x => <-.name_label.x + <-.name_label.width;
+	    y => <-.name_label.y;
+	 };
 	 
-	    UIslider update_slider {
-	       parent => <-.control_frame;
-	       title = "Update Interval (frames)";
-	       mode = "integer";
-	       min = 1.0;
-	       max = 15.0;
-	       width = 245;
-	       value => <-.<-.<-.AccessGridParams.updateInterval;
-	    };
+	 UIlabel address_label {
+	    parent => <-.UImod_panel;
+	    label = "Address:";
+	    width = 85;
+	    alignment = 2;
+	 };
+	 UItext address_text {
+	    parent => <-.UImod_panel;
+	    text => <-.<-.AccessGridParams.ipaddress;
+	    x => <-.address_label.x + <-.address_label.width;
+	    y => <-.address_label.y;
+	 };
+	    
+	 UIlabel port_label {
+	    parent => <-.UImod_panel;
+	    label = "Port:";
+	    width = 85;
+	    alignment = 2;
+	 };
+	 UIfield port_field {
+	    parent => <-.UImod_panel;
+	    value => <-.<-.AccessGridParams.port;
+	    width = 55;
+	    mode = "integer";
+	    x => <-.port_label.x + <-.port_label.width;
+	    y => <-.port_label.y;
+	 };
 	 
-	    /* Crashes FLXmitter at present!
-	    UIslider fps_slider {
-	       parent => <-.control_frame;
-	       title = "Max FPS";
-	       mode = "integer";
-	       min = 5.0;
-	       max = 24.0;
-	       width = 250;
-	       value => <-.<-.<-.AccessGridParams.maxfps;
-	    };
-	    */
-	    
-	    /* Doesn't seem to do anything!
-	    UIslider bw_slider {
-	       parent => <-.control_frame;
-	       title = "Max Bandwidth (kb/s)";
-	       mode = "integer";
-	       min = 128.0;
-	       max = 2048.0;
-	       width = 245;
-	       value => <-.<-.<-.AccessGridParams.maxbandwidth;
-	    };
-	    */
-	    
-	    UIslider quality_slider {
-	       parent => <-.control_frame;
-	       title = "Stream Quality";
-	       mode = "integer";
-	       active => <-.<-.<-.AccessGridParams.encoder;
-	       min = 2.0;
-	       max = 100.0;
-	       width = 245;
-	       value => <-.<-.<-.AccessGridParams.quality;
-	    };
-	    
-	    UIslider colour_slider {
-	       parent => <-.control_frame;
-	       title = "Border Colour";
-	       mode = "integer";
-	       min = 0.0;
-	       max = 255.0;
-	       width = 245;
-	       value => <-.<-.<-.AccessGridParams.border;
-	    };
-	    
-	    UIoptionMenu format_menu {
-	       parent => <-.control_frame;
-	       cmdList => {
-		  <-.form0, <-.form1
-	       };
-	       selectedItem => <-.<-.<-.AccessGridParams.format;
-	       label => "Output Format";
-	    };
-	    UIoption form0 {
-	       label => "ARGB";
-	    };
-	    UIoption form1 {
-	       label => "RGBA";
-	    };
-
-	    UItoggle flip_h_toggle {
-	       parent => <-.control_frame;
-	       label = "Flip horizontally";
-	       width = 150;
-	       set => <-.<-.<-.AccessGridBroadcast.fliph;
-	    };
+	 UIlabel ttl_label {
+	    parent => <-.UImod_panel;
+	    label = "TTL:";
+	    width = 85;
+	    alignment = 2;
+	 };
+	 UIfield ttl_field {
+	    parent => <-.UImod_panel;
+	    value => <-.<-.AccessGridParams.ttl;
+	    width = 40;
+	    mode = "integer";
+	    x => <-.ttl_label.x + <-.ttl_label.width;
+	    y => <-.ttl_label.y;
+	 }; 
 	 
-	    UItoggle flip_v_toggle {
-	       parent => <-.control_frame;
-	       label = "Flip vertically";
-	       width = 150;
-	       set => <-.<-.<-.AccessGridBroadcast.flipv;
+	 UIoptionMenu encoder_menu {
+	    parent => <-.UImod_panel;
+	    cmdList => {
+	       <-.src0, <-.src1
 	    };
+	    selectedItem => <-.<-.AccessGridParams.encoder;
+	    label => "Encoder";
+	 };
+	 UIoption src0 {
+	    label => "h261";
+	 };
+	 UIoption src1 {
+	    label => "jpeg";
+	 };
 	 
-	    UIbutton refresh_button {
-	       parent => <-.control_frame;
-	       label = "Refresh";
-	       do => <-.<-.<-.AccessGridBroadcast.refresh;
+	 UIlabel control_title {
+	    parent => <-.UImod_panel;
+	    label = "Control";
+	    width => parent.clientWidth;
+	    color {
+	       foregroundColor = "white";
+	       backgroundColor = "blue";
 	    };
-	 }; // ControlUI
+	 };
+	 
+	 UItoggle start_toggle {
+	    parent => <-.UImod_panel;
+	    label = "Connect";
+	    set => <-.<-.AccessGridBroadcast.start;
+	 };
+	 
+	 UIslider update_slider {
+	    parent => <-.UImod_panel;
+	    title = "Update Interval (frames)";
+	    mode = "integer";
+	    min = 1.0;
+	    max = 15.0;
+	    width = 245;
+	    value => <-.<-.AccessGridParams.updateInterval;
+	 };
+	 
+	 UIslider fps_slider {
+	    parent => <-.UImod_panel;
+	    title = "Max FPS";
+	    mode = "integer";
+	    min = 1.0;
+	    max = 30.0;
+	    width = 245;
+	    value => <-.<-.AccessGridParams.maxfps;
+	 };
+	 
+	 /* don't usually want to alter this...
+	 UIslider bw_slider {
+	    parent => <-.UImod_panel;
+	    title = "Max Bandwidth (kb/s)";
+	    mode = "integer";
+	    min = 128.0;
+	    max = 2048.0;
+	    width = 245;
+	    value => <-.<-.AccessGridParams.maxbandwidth;
+	 };
+	 */
+	 
+	 UIslider quality_slider {
+	    parent => <-.UImod_panel;
+	    title = "Stream Quality";
+	    mode = "integer";
+	    min = 1.0;
+	    max = 100.0;
+	    width = 245;
+	    value => <-.<-.AccessGridParams.quality;
+	 };
+	 
+	 UIslider colour_slider {
+	    parent => <-.UImod_panel;
+	    title = "Border Colour";
+	    mode = "integer";
+	    min = 0.0;
+	    max = 255.0;
+	    width = 245;
+	    value => <-.<-.AccessGridParams.border;
+	 };
+	 
+	 UIoptionMenu format_menu {
+	    parent => <-.UImod_panel;
+	    cmdList => {
+	       <-.form0, <-.form1
+	    };
+	    selectedItem => <-.<-.AccessGridParams.format;
+	    label => "Output Format";
+	 };
+	 UIoption form0 {
+	    label => "ARGB";
+	 };
+	 UIoption form1 {
+	    label => "RGBA";
+	 };
+	 
+	 UItoggle flip_h_toggle {
+	    parent => <-.UImod_panel;
+	    label = "Flip horizontally";
+	    width = 150;
+	    set => <-.<-.AccessGridBroadcast.fliph;
+	 };
+	 
+	 UItoggle flip_v_toggle {
+	    parent => <-.UImod_panel;
+	    label = "Flip vertically";
+	    width = 150;
+	    set => <-.<-.AccessGridBroadcast.flipv;
+	 };
+	 
+	 UIbutton refresh_button {
+	    parent => <-.UImod_panel;
+	    label = "Refresh";
+	    do => <-.<-.AccessGridBroadcast.refresh;
+	 };
       }; // UI   
    }; // AccessGridEmitter
 }; // flibrary

@@ -37,10 +37,10 @@ flibrary AccessGridMods <
    build_dir="iac_proj/accessgrid",
    out_hdr_file="ag_gen.hxx",
    out_src_file="ag_gen.cxx",
-   link_files="-L$(FLX_DIR) -L$(ACE_DIR)/ace -lFLX -lACE",
+   link_files="-L$(FLX_DIR)/lib -L$(COMMON_DIR)/src -lflx -lmash -luclmmbase -lpthread",
    cxx_src_files="AGBroadcastMod.cxx",
    cxx_hdr_files="AGBroadcastMod.hxx fld/Xfld.h",
-   hdr_dirs="$(FLX_DIR) $(ACE_DIR)",
+   hdr_dirs="$(FLX_DIR)/include",
    cxx_name="" > {
 
    // define the config parameters group
