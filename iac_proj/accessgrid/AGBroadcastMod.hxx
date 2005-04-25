@@ -37,8 +37,8 @@
 
 #include <cstring>
 
-#include "FLXmitter.h"
-#include "FLImagePool.h"
+#include "flxmitter.h"
+#include "imagepool.h"
 
 class AccessGrid_AccessGridBroadcast;
 
@@ -47,18 +47,19 @@ private:
   bool initialized;
   AccessGrid_AccessGridBroadcast *parent;
 
-  FLXmitter* flix;
+  flxmitter* flix;
   bool running;
   bool flixError;
 
+  byte_t* outputBuffer;
+
+  int encoder;  // 0 = h261, 1 = jpeg
   int format;   // 0 = ARGB, 1 = RGBA
+  int quality;
   int border;
   bool flipH;
   bool flipV;
 
-  FLImagePool* imagePool;
-  int lastImage;
-  int lastSerial;
   int frameSize[2];
 
 public:
@@ -77,11 +78,15 @@ public:
   void setFlipH(int h);
   void setFlipV(int v);
   void setBorder(int b);
+  int getEncoder();
+  void setEncoder(int e);
+  int getQuality();
+  void setQuality(int q);
 
   // set up the video transmitter
-  void initNetwork(char* dest, char* enc, char* name, int fps, int bw, int quality);
+  void initNetwork(char* dest, char* name, int enc, int fps, int bw, int quality);
   // wrap previous method for just the vital info
-  void initNetwork(char* dest, char* enc, char* name);
+  void initNetwork(char* dest, char* name, int enc);
 
   // interface methods to the FLXmitter object
   int startTransmitter();

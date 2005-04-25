@@ -43,10 +43,12 @@ int AccessGrid_AccessGridBroadcast::init(OMevent_mask event_mask, int seq_num) {
   if(!connected && start) {
     char dest[64];
     char* ip;
-    char* encoder;
     char* name;
     int port;
     int ttl;
+    int encoder;
+    int fps;
+    int quality;
 
     modInst->setParent(this);
 
@@ -78,16 +80,8 @@ int AccessGrid_AccessGridBroadcast::init(OMevent_mask event_mask, int seq_num) {
     }
 
     // check encoder
-    if(configuration.encoder.valid_obj()) {
-      switch(configuration.encoder) {
-      case 0:
-	encoder = "h261";
-	break;
-      case 1:
-	encoder = "jpeg";
-	break;
-      }
-    }
+    if(configuration.encoder.valid_obj()) 
+      encoder = (int) configuration.encoder;
     else {
       ERRverror("AccessGridBroadcast", ERR_WARNING, "Encoder type not set!");
       start = 0;
@@ -103,11 +97,27 @@ int AccessGrid_AccessGridBroadcast::init(OMevent_mask event_mask, int seq_num) {
       return 0;
     }
 
+    // check fps
+    if(configuration.maxfps.valid_obj())
+      fps = (int) configuration.maxfps;
+    else {
+      fps = 24;
+      configuration.maxfps = 24;
+    }
+
+    // check quality
+    if(configuration.quality.valid_obj())
+      quality = (int) configuration.quality;
+    else {
+      quality = 50;
+      configuration.quality = 50;
+    }
+
     // build full address: ip/port/ttl
     sprintf(dest, "%s/%d/%d", ip, port, ttl);
 
     // start network
-    modInst->initNetwork(dest, encoder, name);
+    modInst->initNetwork(dest, name, encoder, fps, 1024, quality);
   }
   else if(connected && !start) {
     modInst->stopTransmitter();
@@ -129,6 +139,12 @@ int AccessGrid_AccessGridBroadcast::update(OMevent_mask event_mask, int seq_num)
     view_output = (int) start;
   }
 
+  if(configuration.encoder.changed(seq_num)) {
+    modInst->setEncoder((int) configuration.encoder);
+    // emit to show change...
+    modInst->emit();
+  }
+
   if(configuration.format.changed(seq_num)) {
     modInst->setFormat((int) configuration.format);
     // emit to show change...
@@ -136,8 +152,9 @@ int AccessGrid_AccessGridBroadcast::update(OMevent_mask event_mask, int seq_num)
   }
 
   if(configuration.quality.changed(seq_num)) {
-    sprintf(val, "%d", (int) configuration.quality);
-    modInst->commandValue("quality", val);
+    modInst->setQuality((int) configuration.quality);
+    // emit to show change...
+    modInst->emit();
   }
 
   if(configuration.border.changed(seq_num)) {
@@ -152,10 +169,9 @@ int AccessGrid_AccessGridBroadcast::update(OMevent_mask event_mask, int seq_num)
     modInst->commandValue("maxbw", val);
   }
 
-  // flaky!!
   if(configuration.maxfps.changed(seq_num)) {
     sprintf(val, "d%", (int) configuration.maxfps);
-    modInst->commandValue("maxfps", val);
+    modInst->commandValue("fps", val);
   }
 
   if(fliph.changed(seq_num)) {

@@ -37,7 +37,7 @@
 #include "ag_gen.hxx"
 
 AGBroadcastMod::AGBroadcastMod() {
-  //cerr << "*** In AGBroadcastMod constructor." << endl;
+  cerr << "*** In AGBroadcastMod constructor." << endl;
   initialized = false;
   running = false;
   flixError = false;
@@ -51,17 +51,17 @@ AGBroadcastMod::AGBroadcastMod() {
   flipV = false;
 
   flix = 0;
-  imagePool = 0;
+  outputBuffer = new byte_t[frameSize[0] * frameSize[1] * 3];
 }
 
 AGBroadcastMod::~AGBroadcastMod() {
-  //cerr << "*** In ~AGBroadcastMod destructor." << endl;
+  cerr << "*** In ~AGBroadcastMod destructor." << endl;
   stopTransmitter();
   if(flix) {
     delete flix;
   }
-  if(imagePool) {
-    delete imagePool;
+  if(outputBuffer) {
+    delete[] outputBuffer;
   }
 }
 
@@ -73,85 +73,75 @@ void AGBroadcastMod::setParent(AccessGrid_AccessGridBroadcast* p) {
   parent = p;
 }
 
-void AGBroadcastMod::initNetwork(char* dest, char* enc, char* name) {
-  initNetwork(dest, enc, name, 24, 512, 75);
+void AGBroadcastMod::initNetwork(char* dest, char* name, int enc) {
+  initNetwork(dest, name, enc, 24, 512, 50);
 }
 
-void AGBroadcastMod::initNetwork(char* dest, char* enc, char* name, int fps, int bw, int quality) {
-  int argc = 14;
-  char** argv = new char*[argc];
+void AGBroadcastMod::initNetwork(char* dest, char* name, int enc, int fps, int bw, int quality) {
 
-  argv[0] = "source";
-  argv[1] = "flip";
-  argv[2]  = "destination";
-  argv[3]  = dest;
-  argv[4]  = "encoder";
-  argv[5]  = enc;
-  argv[6]  = "name";
-  argv[7]  = name;
-  argv[8]  = "maxfps";
-  argv[9]  = new char[10];
-  sprintf(argv[9], "%d", fps);
-  argv[10] = "maxbw";
-  argv[11] = new char[10];
-  sprintf(argv[11], "%d", bw);
-  argv[12] = "quality";
-  argv[13] = new char[10];
-  sprintf(argv[13], "%d", quality);
+  encoder = enc;
 
-  // create the image pool which is going to hold our frames
-  imagePool = new FLImagePool;
-  imagePool->_nImages = 10;
-  imagePool->_totalPoolSize = sizeof(FLImagePool);
-  imagePool->_nextImage = imagePool->_currentSerial = -1;
-  imagePool->Resize(frameSize[0], frameSize[1], 3);
+  char* encoderstr = new char[5];
+  switch(enc) {
+  case 0:
+    // h261
+    encoderstr = "h261";
+    break;
+  case 1:
+    // jpeg
+    encoderstr = "jpeg";
+    break;
+  default:
+    cerr << "Invalid encoder specified - defaulting to h261." << endl;
+    encoderstr = "h261";
+    encoder = 0;
+  }
+  char fpsstr[10];
+  sprintf(fpsstr, "%d", fps);
+  char maxbwstr[10];
+  sprintf(maxbwstr, "d%", bw);
+  char qualitystr[10];
+  sprintf(qualitystr, "d%", quality);
 
-  // create FLXmitter
-  flix = FLXmitter::New(argc, argv);
-  flix->SetSource(this->imagePool);
-  running = false;
+  // create and initialise flxmitter instance
+  flix = new flxmitter();
+  flix->resize_pool(frameSize[0], frameSize[1], 24);
+  flix->start();
+  flix->set_option("destination", dest);
+  flix->set_option("encoder", encoderstr);
+  flix->set_option("sdes_name", name);
+  flix->set_option("fps", fpsstr);
+  //flix->set_option("maxbw", maxbwstr);
+  flix->set_option("quality", qualitystr);
+
+  running = true;
   flixError = false;
 
   initialized = true;
   parent->connected = 1;
 
-  delete argv[9];
-  delete argv[11];
-  delete argv[13];
-  delete argv;
+  delete[] encoderstr;
 }
 
 int AGBroadcastMod::startTransmitter() {
   if(!running) {
-    if(!flix->Start()) {
-      cerr << "Error starting the FLXmitter." << endl;
-      flixError = true;
-      return 0;
-    }
-    else running = true;
+    flix->start();
+    running = true;
   }
   return 1;
 }
 
 int AGBroadcastMod::stopTransmitter() {
   if(running) {
-    if(!flix->Stop()) {
-      cerr << "Error stopping FLXmitter." << endl;
-      flixError = true;
-      return 0;
-    }
-    else running = false;
+    flix->stop();
+    running = false;
   }
   return 1;
 }
 
 int AGBroadcastMod::commandValue(char* cmd, char* val) {
   if(initialized && !flixError) {
-
-    // not allowed to change source!
-    if(!strcmp(cmd, "source")) return 1;
-
-    flix->CommandValue(cmd, val);
+    flix->set_option(cmd, val);
     return 1;
   }
   return 0;
@@ -182,17 +172,61 @@ void AGBroadcastMod::setFlipV(int v) {
 }
 
 void AGBroadcastMod::setBorder(int b) {
-  border = b;
+  if(border >= 0 && border <= 255) {
+    border = b;
+  }
+}
+
+int AGBroadcastMod::getEncoder() {
+  return encoder;
+}
+
+void AGBroadcastMod::setEncoder(int e) {
+  switch(e) {
+  case 0:
+    // h261
+    commandValue("encoder", "h262");
+    encoder = e;
+    break;
+  case 1:
+    //jpeg
+    commandValue("encoder", "jpeg");
+    encoder = e;
+    break;
+  default:
+    cerr << "Unknown encoder - ignoring." << endl;
+    break;
+  }
+}
+
+int AGBroadcastMod::getQuality() {
+  return quality;
+}
+
+void AGBroadcastMod::setQuality(int q) {
+  if(q < 1 || q > 100) {
+    cerr << "Bad value for quality - ignoring." << endl;
+    return;
+  }
+
+  char qualitystr[10];
+
+  switch(encoder) {
+  case 0:
+    // h261
+    q = 101 - q;
+  }
+
+  sprintf(qualitystr, "%d", q);
+  commandValue("quality", qualitystr);
 }
 
 void AGBroadcastMod::emit() {
   // do nothing if not set up or if we've had an error
   if(!initialized || !running || flixError) return;
 
-  int stride, nextImage;
+  int stride;
   int depth = 3;
-
-  volatile unsigned char* dataTo;
 
   // get the size of the framebuffer...
   int *framebufferSize = (int *) parent->framebuffer.dims.ret_array_ptr(OM_GET_ARRAY_RD);
@@ -202,14 +236,10 @@ void AGBroadcastMod::emit() {
   if((int) parent->framebuffer.nnodes != (framebufferSize[0] * framebufferSize[1])) return;
 
   stride = depth;
-  nextImage = (imagePool->_nextImage + 1) % imagePool->_nImages;
-  dataTo = imagePool->_images[nextImage].GetData();
 
   int  framebuffer_data_comp;
   int  framebuffer_data_size, framebuffer_data_type;
   for (framebuffer_data_comp = 0; framebuffer_data_comp < parent->framebuffer.nnode_data; framebuffer_data_comp++) { 
-    // framebuffer.node_data[framebuffer_data_comp].veclen (int) 
-    // framebuffer.node_data[framebuffer_data_comp].values (char [])
     unsigned char* dataFrom = (unsigned char*) parent->framebuffer.node_data[framebuffer_data_comp].values.ret_array_ptr(OM_GET_ARRAY_RD, &framebuffer_data_size, &framebuffer_data_type);
 
     int dataFromStride = parent->framebuffer.node_data[framebuffer_data_comp].veclen;
@@ -248,7 +278,7 @@ void AGBroadcastMod::emit() {
       }
 
       // blank out destinaton image
-      memset((void*) &(dataTo[0]), border, 304128);
+      memset((void*) outputBuffer, border, 304128);
     }
 
     // Copy and scale the framebuffer into the Access Grid stream
@@ -263,7 +293,7 @@ void AGBroadcastMod::emit() {
 	sx = ((flipx * framebufferSize[0]) / w);
 	i = (sy * rowSize) + (sx * dataFromStride) + (1 - format);
 	j = ((dy + offy) * (352 * 3)) + ((dx + offx) * 3);
-	memcpy((void*) &(dataTo[j]), (void*) &(dataFrom[i]), stride);
+	memcpy((void*) &(outputBuffer[j]), (void*) &(dataFrom[i]), stride);
       }
     }
     
@@ -271,7 +301,6 @@ void AGBroadcastMod::emit() {
       ARRfree(dataFrom);
   }
 
-  // update the next image index and serial number.
-  imagePool->_nextImage = nextImage;
-  imagePool->_currentSerial++;
+  // give the buffer to the flxmitter
+  flix->insert_data(outputBuffer);
 }
