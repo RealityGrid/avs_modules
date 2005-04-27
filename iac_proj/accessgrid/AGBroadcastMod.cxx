@@ -37,32 +37,47 @@
 #include "ag_gen.hxx"
 
 AGBroadcastMod::AGBroadcastMod() {
-  cerr << "*** In AGBroadcastMod constructor." << endl;
+  //cerr << "*** In AGBroadcastMod constructor." << endl;
   initialized = false;
   running = false;
-  flixError = false;
 
-  frameSize[0] = 352;
-  frameSize[1] = 288;
   format = 0;           // ARGB is default
   border = 150;
 
   flipH = false;
   flipV = false;
 
+  // initialise array pointers to zero...
   flix = 0;
-  outputBuffer = new byte_t[frameSize[0] * frameSize[1] * 3];
+  outputBuffers = 0;
+  frameSize = 0;
+  tileDims = 0;
 }
 
 AGBroadcastMod::~AGBroadcastMod() {
-  cerr << "*** In ~AGBroadcastMod destructor." << endl;
+  //cerr << "*** In ~AGBroadcastMod destructor." << endl;
   stopTransmitter();
+
   if(flix) {
-    delete flix;
+    for(int i = 0; i < numTiles; i++)
+      delete flix[i];
+    delete[] flix;
   }
-  if(outputBuffer) {
-    delete[] outputBuffer;
+
+  if(outputBuffers) {
+    for(int x = 0; x < tileDims[0]; x++) {
+      for(int y = 0; y < tileDims[1]; y++) 
+	delete[] outputBuffers[x][y];
+      delete[] outputBuffers[x];
+    }
+    delete[] outputBuffers;
   }
+
+  if(frameSize)
+    delete[] frameSize;
+
+  if(tileDims)
+    delete[] tileDims;
 }
 
 AccessGrid_AccessGridBroadcast* AGBroadcastMod::getParent() {
@@ -73,59 +88,57 @@ void AGBroadcastMod::setParent(AccessGrid_AccessGridBroadcast* p) {
   parent = p;
 }
 
-void AGBroadcastMod::initNetwork(char* dest, char* name, int enc) {
-  initNetwork(dest, name, enc, 24, 512, 50);
+void AGBroadcastMod::initStreams(int sw, int sh, int tw, int th) {
+  //cerr << "*** In AGBroadcastMod initStreams." << endl;
+  frameSize = new int[2];
+  frameSize[0] = sw;
+  frameSize[1] = sh;
+
+  tileDims = new int[2];
+  tileDims[0] = tw;
+  tileDims[1] = th;
+  numTiles = tw * th;
+
+  // create flxmitter instances and output buffers
+  flix = new flxmitter*[numTiles];
+  for(int i = 0; i < numTiles; i++) {
+    flix[i] = new flxmitter();
+  }
+
+  outputBuffers = new byte_t**[tileDims[0]];
+  for(int x = 0; x < tileDims[0]; x++) {
+    outputBuffers[x] = new byte_t*[tileDims[1]];
+    for(int y = 0; y < tileDims[1]; y++)
+      outputBuffers[x][y] = new byte_t[frameSize[0] * frameSize[1] * 3];
+  } 
 }
 
-void AGBroadcastMod::initNetwork(char* dest, char* name, int enc, int fps, int bw, int quality) {
+void AGBroadcastMod::initNetwork(char* dest, char* name, int enc) {
+  initNetwork(dest, name, enc, 24, 80);
+}
 
-  encoder = enc;
+void AGBroadcastMod::initNetwork(char* dest, char* name, int enc, int fps, int quality) {
 
-  char* encoderstr = new char[5];
-  switch(enc) {
-  case 0:
-    // h261
-    encoderstr = "h261";
-    break;
-  case 1:
-    // jpeg
-    encoderstr = "jpeg";
-    break;
-  default:
-    cerr << "Invalid encoder specified - defaulting to h261." << endl;
-    encoderstr = "h261";
-    encoder = 0;
+  // initialise flxmitter instances
+  for(int i = 0; i < numTiles; i++) {
+    flix[i]->resize_pool(frameSize[0], frameSize[1], 24);
+    flix[i]->start();
+    flix[i]->set_option("destination", dest);
+    flix[i]->set_option("sdes_name", name);
+    setEncoder(enc);
+    setFramerate(fps);
+    setQuality(quality);
   }
-  char fpsstr[10];
-  sprintf(fpsstr, "%d", fps);
-  char maxbwstr[10];
-  sprintf(maxbwstr, "d%", bw);
-  char qualitystr[10];
-  sprintf(qualitystr, "d%", quality);
-
-  // create and initialise flxmitter instance
-  flix = new flxmitter();
-  flix->resize_pool(frameSize[0], frameSize[1], 24);
-  flix->start();
-  flix->set_option("destination", dest);
-  flix->set_option("encoder", encoderstr);
-  flix->set_option("sdes_name", name);
-  flix->set_option("fps", fpsstr);
-  //flix->set_option("maxbw", maxbwstr);
-  flix->set_option("quality", qualitystr);
 
   running = true;
-  flixError = false;
-
   initialized = true;
   parent->connected = 1;
-
-  delete[] encoderstr;
 }
 
 int AGBroadcastMod::startTransmitter() {
   if(!running) {
-    flix->start();
+    for(int i = 0; i < numTiles; i++)
+      flix[i]->start();
     running = true;
   }
   return 1;
@@ -133,18 +146,11 @@ int AGBroadcastMod::startTransmitter() {
 
 int AGBroadcastMod::stopTransmitter() {
   if(running) {
-    flix->stop();
+    for(int i = 0; i < numTiles; i++)
+      flix[i]->stop();
     running = false;
   }
   return 1;
-}
-
-int AGBroadcastMod::commandValue(char* cmd, char* val) {
-  if(initialized && !flixError) {
-    flix->set_option(cmd, val);
-    return 1;
-  }
-  return 0;
 }
 
 bool AGBroadcastMod::isRunning() {
@@ -185,12 +191,14 @@ void AGBroadcastMod::setEncoder(int e) {
   switch(e) {
   case 0:
     // h261
-    commandValue("encoder", "h262");
+    for(int i = 0; i < numTiles; i++)
+      flix[i]->set_option("encoder", "h261");
     encoder = e;
     break;
   case 1:
     //jpeg
-    commandValue("encoder", "jpeg");
+    for(int i = 0; i < numTiles; i++)
+      flix[i]->set_option("encoder", "jpeg");
     encoder = e;
     break;
   default:
@@ -205,7 +213,7 @@ int AGBroadcastMod::getQuality() {
 
 void AGBroadcastMod::setQuality(int q) {
   if(q < 1 || q > 100) {
-    cerr << "Bad value for quality - ignoring." << endl;
+    cerr << "Bad value for quality (1 <= q <= 100) - ignoring." << endl;
     return;
   }
 
@@ -218,12 +226,44 @@ void AGBroadcastMod::setQuality(int q) {
   }
 
   sprintf(qualitystr, "%d", q);
-  commandValue("quality", qualitystr);
+  for(int i = 0; i < numTiles; i++)
+    flix[i]->set_option("quality", qualitystr);
+}
+
+int AGBroadcastMod::getFramerate() {
+  return framerate;
+}
+
+void AGBroadcastMod::setFramerate(int fps) {
+  if(fps < 1 || fps > 30) {
+    cerr << "Bad value for framerate (1 <= fps <= 30) - ignoring." << endl;
+    return;
+  }
+
+  char fpsstr[10];
+  sprintf(fpsstr, "%d", fps);
+  for(int i = 0; i < numTiles; i++)
+    flix[i]->set_option("fps", fpsstr);
+
+  framerate = fps;
+}
+
+int AGBroadcastMod::getBandwidth() {
+  return bandwidth;
+}
+
+void AGBroadcastMod::setBandwidth(int bw) {
+  char bwstr[10];
+  sprintf(bwstr, "%d", bw);
+  for(int i = 0; i < numTiles; i++)
+    flix[i]->set_option("maxbw", bwstr);
+
+  bandwidth = bw;
 }
 
 void AGBroadcastMod::emit() {
   // do nothing if not set up or if we've had an error
-  if(!initialized || !running || flixError) return;
+  if(!initialized || !running) return;
 
   int stride;
   int depth = 3;
@@ -248,52 +288,61 @@ void AGBroadcastMod::emit() {
     // between framebuffer size changes, there is no data at all!
     if(framebuffer_data_size == 0) return;
 
-    int j = 0;                               // index into destination image
-    int i = 0;                               // index into source image
+    int j = 0;                                    // index into destination image
+    int i = 0;                                    // index into source image
+    int tx = 0;
+    int ty = 0;
     int rowSize = framebufferSize[0] * dataFromStride;
-    int sx, sy;                              // x and y indicies into source image
-    int w = 352;                             // width of scaled image
-    int h = 288;                             // height of scaled image
-    int flipx, flipy;                        // flipped indices into the dest image
-    int offx = 0;                            // x offset of scaled image
-    int offy = 0;                            // y offset of scaled image
+    int sx, sy;                                   // x and y indicies into source image
+    int totalWidth = frameSize[0] * tileDims[0];  // total frame width
+    int totalHeight = frameSize[1] * tileDims[1]; // total frame height
+    int w = totalWidth;                           // width of scaled image
+    int h = totalHeight;                          // height of scaled image
+    int flipx, flipy;                             // flipped indices into the dest image
+    int offx = 0;                                 // x offset of scaled image
+    int offy = 0;                                 // y offset of scaled image
+
 
     // Calculate the scaling factors if needs be while preserving
     // the aspect ratio of the image
-    if(((framebufferSize[0] != 352) || (framebufferSize[1] != 288))) {
+    if(((framebufferSize[0] != totalWidth) || (framebufferSize[1] != totalHeight))) {
       // calculate aspect ratio of source image
       float r = (float) framebufferSize[0] / (float) framebufferSize[1];
 
-      if((framebufferSize[0] - 352) > (framebufferSize[1] - 288)) {
+      if((framebufferSize[0] - totalWidth) > (framebufferSize[1] - totalHeight)) {
 	// scale to width
-	w = 352;
+	w = totalWidth;
 	h = (int) (w / r);
-	offy = (int) ((288 - h) / 2);
+	offy = (int) ((totalHeight - h) / 2);
       }
       else {
 	// scale to height
-	h = 288;
+	h = totalHeight;
 	w = (int) (r * h);
-	offx = (int) ((352 - w) / 2);
+	offx = (int) ((totalWidth - w) / 2);
       }
 
-      // blank out destinaton image
-      memset((void*) outputBuffer, border, 304128);
+      // blank out destination images
+      for(int x = 0; x < tileDims[0]; x++)
+	for(int y = 0; y < tileDims[1]; y++)
+	  memset((void*) outputBuffers[x][y], border, (frameSize[0] * frameSize[1] * stride));
     }
 
-    // Copy and scale the framebuffer into the Access Grid stream
+    // Copy and scale the framebuffer into the Access Grid streams
     // taking into account the required output format.
-    for(int dy = 0; dy < h; dy++) {
-      if(flipV) flipy = h - dy - 1;
-      else flipy = dy;
+    for(int dy = offy; dy < (h + offy); dy++) {
+      if(flipV) flipy = h - dy - offy - 1;
+      else flipy = (dy - offy);
       sy = ((flipy * framebufferSize[1]) / h);
-      for(int dx = 0; dx < w; dx++) {
-	if(flipH) flipx = w - dx - 1;
-	else flipx = dx;
+      ty = (int) floor((double) (dy / frameSize[1]));
+      for(int dx = offx; dx < (w + offx); dx++) {
+	if(flipH) flipx = w - dx - offx - 1;
+	else flipx = (dx - offx);
 	sx = ((flipx * framebufferSize[0]) / w);
+	tx = (int) floor((double) (dx / frameSize[0]));
 	i = (sy * rowSize) + (sx * dataFromStride) + (1 - format);
-	j = ((dy + offy) * (352 * 3)) + ((dx + offx) * 3);
-	memcpy((void*) &(outputBuffer[j]), (void*) &(dataFrom[i]), stride);
+	j = ((dy - (frameSize[1] * ty)) * frameSize[0] * 3) + ((dx - (frameSize[0] * tx)) * 3);
+	memcpy((void*) &(outputBuffers[tx][ty][j]), (void*) &(dataFrom[i]), stride);
       }
     }
     
@@ -301,6 +350,10 @@ void AGBroadcastMod::emit() {
       ARRfree(dataFrom);
   }
 
-  // give the buffer to the flxmitter
-  flix->insert_data(outputBuffer);
+  int f = 0;
+  // give the buffers to the flxmitters
+  for(int x = 0; x < tileDims[0]; x++)
+    for(int y = 0; y < tileDims[1]; y++)
+      flix[f++]->insert_data(outputBuffers[x][y]);
+      
 }

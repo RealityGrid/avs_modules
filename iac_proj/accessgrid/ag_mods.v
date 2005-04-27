@@ -60,6 +60,8 @@ flibrary AccessGridMods <
       };
       int border;
       int updateInterval;
+      int stream_dims[2];
+      int tile_dims[2];
    };
 
    // define the low-level module

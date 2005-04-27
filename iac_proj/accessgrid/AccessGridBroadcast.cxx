@@ -50,6 +50,12 @@ int AccessGrid_AccessGridBroadcast::init(OMevent_mask event_mask, int seq_num) {
     int fps;
     int quality;
 
+    // defaults for the stream size and tiling layout
+    int stream_w = 352;
+    int stream_h = 288;
+    int tile_x = 1;
+    int tile_y = 1;
+
     modInst->setParent(this);
 
     // check ipaddress
@@ -113,11 +119,36 @@ int AccessGrid_AccessGridBroadcast::init(OMevent_mask event_mask, int seq_num) {
       configuration.quality = 50;
     }
 
+    // check stream_dims
+    if(configuration.stream_dims.valid_obj()) {
+      int* streamSize = 0;
+      streamSize = (int*) configuration.stream_dims.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
+      if(streamSize) {
+	stream_w = streamSize[0];
+	stream_h = streamSize[1];
+	ARRfree(streamSize);
+      }
+    }
+
+    // check tile_dims
+    if(configuration.tile_dims.valid_obj()) {
+      int* tiles = 0;
+      tiles = (int*) configuration.tile_dims.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
+      if(tiles) {
+	tile_x = tiles[0];
+	tile_y = tiles[1];
+	ARRfree(tiles);
+      }
+    }
+
     // build full address: ip/port/ttl
     sprintf(dest, "%s/%d/%d", ip, port, ttl);
 
+    // init streams memory
+    modInst->initStreams(stream_w, stream_h, tile_x, tile_y);
+
     // start network
-    modInst->initNetwork(dest, name, encoder, fps, 1024, quality);
+    modInst->initNetwork(dest, name, encoder, fps, quality);
   }
   else if(connected && !start) {
     modInst->stopTransmitter();
@@ -132,7 +163,6 @@ int AccessGrid_AccessGridBroadcast::init(OMevent_mask event_mask, int seq_num) {
 
 int AccessGrid_AccessGridBroadcast::update(OMevent_mask event_mask, int seq_num) {
 
-  char val[64];
   AGBroadcastMod* modInst = (AGBroadcastMod*) ret_class_ptr("AGBroadcastMod");
 
   if(start.changed(seq_num)) {
@@ -165,13 +195,11 @@ int AccessGrid_AccessGridBroadcast::update(OMevent_mask event_mask, int seq_num)
 
   // doesn't seem to do ought...
   if(configuration.maxbandwidth.changed(seq_num)) {
-    sprintf(val, "%d", (int) configuration.maxbandwidth);
-    modInst->commandValue("maxbw", val);
+    modInst->setBandwidth((int) configuration.maxbandwidth);
   }
 
   if(configuration.maxfps.changed(seq_num)) {
-    sprintf(val, "d%", (int) configuration.maxfps);
-    modInst->commandValue("fps", val);
+    modInst->setFramerate((int) configuration.maxfps);
   }
 
   if(fliph.changed(seq_num)) {

@@ -45,22 +45,27 @@ class AccessGrid_AccessGridBroadcast;
 class AGBroadcastMod {
 private:
   bool initialized;
+  bool running;
+
   AccessGrid_AccessGridBroadcast *parent;
 
-  flxmitter* flix;
-  bool running;
-  bool flixError;
+  flxmitter** flix;
 
-  byte_t* outputBuffer;
+  byte_t*** outputBuffers;
 
   int encoder;  // 0 = h261, 1 = jpeg
   int format;   // 0 = ARGB, 1 = RGBA
   int quality;
+  int framerate;
+  int bandwidth;
+
   int border;
   bool flipH;
   bool flipV;
 
-  int frameSize[2];
+  int* frameSize;
+  int* tileDims;
+  int numTiles;
 
 public:
 
@@ -78,20 +83,28 @@ public:
   void setFlipH(int h);
   void setFlipV(int v);
   void setBorder(int b);
+
+  // flxmitter accessors
   int getEncoder();
   void setEncoder(int e);
   int getQuality();
   void setQuality(int q);
+  int getFramerate();
+  void setFramerate(int fps);
+  int getBandwidth();
+  void setBandwidth(int bw);
+
+  // set up video streams and tiles
+  void initStreams(int sw, int sh, int tw, int th);
 
   // set up the video transmitter
-  void initNetwork(char* dest, char* name, int enc, int fps, int bw, int quality);
+  void initNetwork(char* dest, char* name, int enc, int fps, int quality);
   // wrap previous method for just the vital info
   void initNetwork(char* dest, char* name, int enc);
 
   // interface methods to the FLXmitter object
   int startTransmitter();
   int stopTransmitter();
-  int commandValue(char* cmd, char* val);
 
   // emit a new framebuffer
   void emit();

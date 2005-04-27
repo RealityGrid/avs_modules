@@ -46,10 +46,12 @@ flibrary AccessGridMacs {
 	 encoder = 0;
 	 maxfps = 24;
 	 maxbandwidth = 512;
-	 quality = 50;
+	 quality = 80;
 	 format = 0;
 	 border = 150;
-	 updateInterval = 1;
+	 updateInterval = 2;
+	 stream_dims = {352, 288};
+	 tile_dims = {1, 1};
       };
 
       IAC_PROJ.AccessGrid.AccessGridMods.AccessGridBroadcast AccessGridBroadcast {
@@ -68,7 +70,7 @@ flibrary AccessGridMacs {
 	 UImod_panel UImod_panel {
 	    title = "Access Grid Emitter";
 	    width = 250;
-	    height = 586;
+	    height = 740;
 	 };
 	 
 	 UIlabel config_title {
@@ -153,6 +155,40 @@ flibrary AccessGridMacs {
 	    label => "jpeg";
 	 };
 	 
+	 UIlabel tiling_title {
+	    parent => <-.UImod_panel;
+	    label = "Stream Tiling";
+	    width => parent.clientWidth;
+	    color {
+	       foregroundColor = "white";
+	       backgroundColor = "blue";
+	    };
+	 };
+
+	 UIslider tile_y_slider {
+	    parent => <-.UImod_panel;
+	    title = "Y";
+	    mode = "integer";
+	    min = 1.0;
+	    max = 5.0;
+	    horizontal = 0;
+	    width = 50;
+	    height = 100;
+	    processingDirection = "up";
+	    value => <-.<-.AccessGridParams.tile_dims[1];
+	 };
+	 
+	 UIslider tile_x_slider {
+	    parent => <-.UImod_panel;
+	    title = "X";
+	    mode = "integer";
+	    min = 1.0;
+	    max = 5.0;
+	    x = 40;
+	    y => <-.tile_y_slider.y + 80;
+	    value => <-.<-.AccessGridParams.tile_dims[0];
+	 };
+
 	 UIlabel control_title {
 	    parent => <-.UImod_panel;
 	    label = "Control";
