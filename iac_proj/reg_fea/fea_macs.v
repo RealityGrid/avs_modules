@@ -31,6 +31,25 @@
 ---------------------------------------------------------------------------- */
 
 flibrary RealityGridFEAMacs {
+   macro ReG_coord_maths {
+      ilink in_data;
+      
+      DVcoord_math DVcoord_math {
+	 in1 => <-.in_data;
+	 operation_x => <-.X;
+	 operation_y => <-.Y;
+	 operation_z => <-.Z;
+      };
+
+      float scale<NEportLevels={0,1}>;
+      
+      string X<NEportLevels={0,1}>;
+      string Y<NEportLevels={0,1}>;
+      string Z<NEportLevels={0,1}>;
+
+      olink out_data => DVcoord_math.out;
+   };
+   
    macro RealityGridFEAReader {
       
       IAC_PROJ.RealityGrid.RealityGridMacs.RealityGridSteerer RealityGridSteerer {
@@ -62,7 +81,16 @@ flibrary RealityGridFEAMacs {
 	 gotElements = 0;
       };
 
+      IAC_PROJ.RealityGridFEA.RealityGridFEAMacs.ReG_coord_maths ReG_coord_maths {
+	 in_data => RealityGridFEAReaderMod.outData;
+	 scale = 1.0;
+	 X = "#1x + (in_data.node_data[0].values[][0] * scale)";
+	 Y = "#1y + (in_data.node_data[0].values[][1] * scale)";
+	 Z = "#1z + (in_data.node_data[0].values[][2] * scale)";
+      };
+      
       olink outData => RealityGridFEAReaderMod.outData;
+      olink outDataDisps => ReG_coord_maths.out_data;
       
    }; // RealityGridFEAReader
 }; // RealityGridFEAMacs
