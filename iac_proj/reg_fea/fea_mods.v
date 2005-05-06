@@ -40,9 +40,7 @@ flibrary RealityGridFEAMods <
    // define the low-level mod
    module RealityGridFEAReaderMod<
       src_file="RealityGridFEAReaderMod.cxx",
-      cxx_members="      float* oldCoords;
-      ~RealityGridFEA_RealityGridFEAReaderMod();\n",
-      cxx_members_constr="oldCoords(0)"
+      cxx_members="      ~RealityGridFEA_RealityGridFEAReaderMod();\n"
       > {
 	 cxxmethod update(
 	    inData+notify+read+req,
