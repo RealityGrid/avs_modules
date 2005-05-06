@@ -30,6 +30,8 @@
   Author........: Robert Haines
 ---------------------------------------------------------------------------- */
 
+#include <math.h>
+
 #include "iac_proj/reg_fea/fea_gen.hxx"
 
 
@@ -59,11 +61,12 @@ int RealityGridFEA_RealityGridFEAReaderMod::update(OMevent_mask event_mask, int 
       return 0;
     }
 
-    // first time through we should get three data slices:
+    // first time through we should get four data slices:
     // * coordinates
     // * element data
     // * displacements for the coordinates
-    if(slices == 3 && !elementsInit) {
+    // * stresses on the cells
+    if(slices == 4 && !elementsInit) {
       // initial pass
       int numCoords = (int) inData[0].size / 3;
       int numElements = (int) inData[1].size / 12;
@@ -71,26 +74,48 @@ int RealityGridFEA_RealityGridFEAReaderMod::update(OMevent_mask event_mask, int 
       outData.nspace = 3;
       outData.nnodes = numCoords;
 
-      // allocate memory for storing coordinates
-      oldCoords = (float*) malloc(numCoords * 3 * sizeof(float));
+      // set up node_data
+      outData.nnode_data = 2;
+      outData.node_data[0].veclen = 3;
+      outData.node_data[0].labels = "Displacements";
+      outData.node_data[1].veclen = 1;
+      outData.node_data[1].labels = "Stress (Srms)";
 
       // read in and copy coordinates and initial displacements
       double* inCoords = (double*) inData[0].data.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
-      double* displacements = (double*) inData[0].data.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
+      double* inDisps = (double*) inData[2].data.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
+      double* inStress = (double*) inData[3].data.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
       float* outCoords = (float*) outData.coordinates.values.ret_array_ptr(OM_GET_ARRAY_WR);
+      float* outDisps = (float*) outData.node_data[0].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress = (float*) outData.node_data[1].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
 
-      if(inCoords && outCoords && oldCoords && displacements) {
-	for(int i = 0; i < (numCoords * 3); i++) {
-	  outCoords[i] = (float) (inCoords[i] + displacements[i]);
-	  oldCoords[i] = (float) inCoords[i];
+      double sx, sy, sz;
+
+      if(inCoords && outCoords && inDisps && outDisps && inStress && outStress) {
+	for(int i = 0; i < numCoords; i++) {
+	  outCoords[(i * 3)] = (float) inCoords[(i * 3)];
+	  outCoords[(i * 3) + 1] = (float) inCoords[(i * 3) + 1];
+	  outCoords[(i * 3) + 2] = (float) inCoords[(i * 3) + 2];
+
+	  outDisps[(i * 3)] = (float) inDisps[(i * 3)];
+	  outDisps[(i * 3) + 1] = (float) inDisps[(i * 3) + 1];
+	  outDisps[(i * 3) + 2] = (float) inDisps[(i * 3) + 2];
+
+	  sx = inStress[(i * 6)];
+	  sy = inStress[(i * 6) + 1];
+	  sz = inStress[(i * 6) + 2];
+	  outStress[i] = (float) sqrt((sx * sx) + (sy * sy) + (sz * sz));
 	}
-
+	
 	ARRfree(inCoords);
-	ARRfree(displacements);
+	ARRfree(inDisps);
+	ARRfree(inStress);
 	ARRfree(outCoords);
+	ARRfree(outDisps);
+	ARRfree(outStress);
       }
       else {
-	ERRverror("RealityGridFEAReader", ERR_WARNING, "Could not allocate memory for coordinates!");
+	ERRverror("RealityGridFEAReader", ERR_WARNING, "Could not allocate memory for coordinates, displacements and stresses!");
 	return 0;
       }
 
@@ -132,22 +157,36 @@ int RealityGridFEA_RealityGridFEAReaderMod::update(OMevent_mask event_mask, int 
       //printf("Got initial data: %d coords, %d elements.\n", numCoords, numElements);
     }
 
-    // on subsequent iterations we should only get one data slice:
-    // * coordinate displacements.
-    else if(slices == 1 && elementsInit) {
+    // on subsequent iterations we should get two data slices:
+    // * coordinate displacements
+    // * stresses on the cells
+    else if(slices == 2 && elementsInit) {
       // updated pass
       int numCoords = (int) inData[0].size / 3;
 
-      float* updateCoords = (float*) outData.coordinates.values.ret_array_ptr(OM_GET_ARRAY_WR, NULL, NULL);
-      double* displacements = (double*) inData[0].data.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
+      double* inDisps = (double*) inData[0].data.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
+      float* outDisps = (float*) outData.node_data[0].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      double* inStress = (double*) inData[1].data.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
+      float* outStress = (float*) outData.node_data[1].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
 
-      if(updateCoords && displacements && oldCoords) {
-	for(int i = 0; i < (numCoords * 3); i++) {
-	  updateCoords[i] = oldCoords[i] + (float) displacements[i];
+      if(inDisps && outDisps && inStress && outStress) {
+	double sx, sy, sz;
+
+	for(int i = 0; i < numCoords; i++) {
+	  outDisps[(i * 3)] = (float) inDisps[(i * 3)];
+	  outDisps[(i * 3) + 1] = (float) inDisps[(i * 3) + 1];
+	  outDisps[(i * 3) + 2] = (float) inDisps[(i * 3) + 2];
+
+	  sx = inStress[(i * 6)];
+	  sy = inStress[(i * 6) + 1];
+	  sz = inStress[(i * 6) + 2];
+	  outStress[i] = (float) sqrt((sx * sx) + (sy * sy) + (sz * sz));
 	}
 
-	ARRfree(updateCoords);
-	ARRfree(displacements);
+	ARRfree(inDisps);
+	ARRfree(outDisps);
+	ARRfree(inStress);
+	ARRfree(outStress);
       }
       else {
 	ERRverror("RealityGridFEAReader", ERR_WARNING, "Memory allocation failure during displacement updates!");
@@ -170,6 +209,4 @@ int RealityGridFEA_RealityGridFEAReaderMod::update(OMevent_mask event_mask, int 
 }
 
 RealityGridFEA_RealityGridFEAReaderMod::~RealityGridFEA_RealityGridFEAReaderMod() {
-  if(oldCoords)
-    free(oldCoords);
 }
