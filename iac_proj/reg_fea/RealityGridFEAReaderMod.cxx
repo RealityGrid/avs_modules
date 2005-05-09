@@ -75,11 +75,23 @@ int RealityGridFEA_RealityGridFEAReaderMod::update(OMevent_mask event_mask, int 
       outData.nnodes = numCoords;
 
       // set up node_data
-      outData.nnode_data = 2;
+      outData.nnode_data = 8;
       outData.node_data[0].veclen = 3;
       outData.node_data[0].labels = "Displacements";
       outData.node_data[1].veclen = 1;
-      outData.node_data[1].labels = "Stress (Srms)";
+      outData.node_data[1].labels = "Stress S(rms)";
+      outData.node_data[2].veclen = 1;
+      outData.node_data[2].labels = "Stress S(x)";
+      outData.node_data[3].veclen = 1;
+      outData.node_data[3].labels = "Stress S(y)";
+      outData.node_data[4].veclen = 1;
+      outData.node_data[4].labels = "Stress S(z)";
+      outData.node_data[5].veclen = 1;
+      outData.node_data[5].labels = "Stress T(xy)";
+      outData.node_data[6].veclen = 1;
+      outData.node_data[6].labels = "Stress T(yz)";
+      outData.node_data[7].veclen = 1;
+      outData.node_data[7].labels = "Stress T(xz)";
 
       // read in and copy coordinates and initial displacements
       double* inCoords = (double*) inData[0].data.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
@@ -87,11 +99,17 @@ int RealityGridFEA_RealityGridFEAReaderMod::update(OMevent_mask event_mask, int 
       double* inStress = (double*) inData[3].data.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
       float* outCoords = (float*) outData.coordinates.values.ret_array_ptr(OM_GET_ARRAY_WR);
       float* outDisps = (float*) outData.node_data[0].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
-      float* outStress = (float*) outData.node_data[1].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress0 = (float*) outData.node_data[1].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress1 = (float*) outData.node_data[2].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress2 = (float*) outData.node_data[3].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress3 = (float*) outData.node_data[4].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress4 = (float*) outData.node_data[5].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress5 = (float*) outData.node_data[6].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress6 = (float*) outData.node_data[7].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
 
       double sx, sy, sz;
 
-      if(inCoords && outCoords && inDisps && outDisps && inStress && outStress) {
+      if(inCoords && outCoords && inDisps && outDisps && inStress && outStress6) {
 	for(int i = 0; i < numCoords; i++) {
 	  outCoords[(i * 3)] = (float) inCoords[(i * 3)];
 	  outCoords[(i * 3) + 1] = (float) inCoords[(i * 3) + 1];
@@ -104,7 +122,13 @@ int RealityGridFEA_RealityGridFEAReaderMod::update(OMevent_mask event_mask, int 
 	  sx = inStress[(i * 6)];
 	  sy = inStress[(i * 6) + 1];
 	  sz = inStress[(i * 6) + 2];
-	  outStress[i] = (float) sqrt(((sx * sx) + (sy * sy) + (sz * sz)) / 3.0);
+	  outStress0[i] = (float) sqrt(((sx * sx) + (sy * sy) + (sz * sz)) / 3.0);
+	  outStress1[i] = (float) sx;
+	  outStress2[i] = (float) sy;
+	  outStress3[i] = (float) sz;
+	  outStress4[i] = (float) inStress[(i * 6) + 3];
+	  outStress5[i] = (float) inStress[(i * 6) + 4];
+	  outStress6[i] = (float) inStress[(i * 6) + 5];
 	}
 	
 	ARRfree(inCoords);
@@ -112,7 +136,13 @@ int RealityGridFEA_RealityGridFEAReaderMod::update(OMevent_mask event_mask, int 
 	ARRfree(inStress);
 	ARRfree(outCoords);
 	ARRfree(outDisps);
-	ARRfree(outStress);
+	ARRfree(outStress0);
+	ARRfree(outStress1);
+	ARRfree(outStress2);
+	ARRfree(outStress3);
+	ARRfree(outStress4);
+	ARRfree(outStress5);
+	ARRfree(outStress6);
       }
       else {
 	ERRverror("RealityGridFEAReader", ERR_WARNING, "Could not allocate memory for coordinates, displacements and stresses!");
@@ -165,11 +195,17 @@ int RealityGridFEA_RealityGridFEAReaderMod::update(OMevent_mask event_mask, int 
       int numCoords = (int) inData[0].size / 3;
 
       double* inDisps = (double*) inData[0].data.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
-      float* outDisps = (float*) outData.node_data[0].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
       double* inStress = (double*) inData[1].data.ret_array_ptr(OM_GET_ARRAY_RD, NULL, NULL);
-      float* outStress = (float*) outData.node_data[1].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outDisps = (float*) outData.node_data[0].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress0 = (float*) outData.node_data[1].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress1 = (float*) outData.node_data[2].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress2 = (float*) outData.node_data[3].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress3 = (float*) outData.node_data[4].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress4 = (float*) outData.node_data[5].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress5 = (float*) outData.node_data[6].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
+      float* outStress6 = (float*) outData.node_data[7].values.ret_typed_array_ptr(OM_GET_ARRAY_WR, OM_TYPE_FLOAT, NULL);
 
-      if(inDisps && outDisps && inStress && outStress) {
+      if(inDisps && outDisps && inStress && outStress6) {
 	double sx, sy, sz;
 
 	for(int i = 0; i < numCoords; i++) {
@@ -180,13 +216,25 @@ int RealityGridFEA_RealityGridFEAReaderMod::update(OMevent_mask event_mask, int 
 	  sx = inStress[(i * 6)];
 	  sy = inStress[(i * 6) + 1];
 	  sz = inStress[(i * 6) + 2];
-	  outStress[i] = (float) sqrt(((sx * sx) + (sy * sy) + (sz * sz)) / 3.0);
+	  outStress0[i] = (float) sqrt(((sx * sx) + (sy * sy) + (sz * sz)) / 3.0);
+	  outStress1[i] = (float) sx;
+	  outStress2[i] = (float) sy;
+	  outStress3[i] = (float) sz;
+	  outStress4[i] = (float) inStress[(i * 6) + 3];
+	  outStress5[i] = (float) inStress[(i * 6) + 4];
+	  outStress6[i] = (float) inStress[(i * 6) + 5];
 	}
 
 	ARRfree(inDisps);
 	ARRfree(outDisps);
 	ARRfree(inStress);
-	ARRfree(outStress);
+	ARRfree(outStress0);
+	ARRfree(outStress1);
+	ARRfree(outStress2);
+	ARRfree(outStress3);
+	ARRfree(outStress4);
+	ARRfree(outStress5);
+	ARRfree(outStress6);
       }
       else {
 	ERRverror("RealityGridFEAReader", ERR_WARNING, "Memory allocation failure during displacement updates!");
