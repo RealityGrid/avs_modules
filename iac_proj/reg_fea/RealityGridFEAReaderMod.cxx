@@ -104,7 +104,7 @@ int RealityGridFEA_RealityGridFEAReaderMod::update(OMevent_mask event_mask, int 
 	  sx = inStress[(i * 6)];
 	  sy = inStress[(i * 6) + 1];
 	  sz = inStress[(i * 6) + 2];
-	  outStress[i] = (float) sqrt((sx * sx) + (sy * sy) + (sz * sz));
+	  outStress[i] = (float) sqrt(((sx * sx) + (sy * sy) + (sz * sz)) / 3.0);
 	}
 	
 	ARRfree(inCoords);
@@ -180,7 +180,7 @@ int RealityGridFEA_RealityGridFEAReaderMod::update(OMevent_mask event_mask, int 
 	  sx = inStress[(i * 6)];
 	  sy = inStress[(i * 6) + 1];
 	  sz = inStress[(i * 6) + 2];
-	  outStress[i] = (float) sqrt((sx * sx) + (sy * sy) + (sz * sz));
+	  outStress[i] = (float) sqrt(((sx * sx) + (sy * sy) + (sz * sz)) / 3.0);
 	}
 
 	ARRfree(inDisps);
