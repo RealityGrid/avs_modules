@@ -90,62 +90,58 @@ flibrary RealityGridLB3DApps {
 		     set = 1;
 		  };
 	       };
-	    
-	       macro VolumeUI {
-		  UIframe vol_frame {
-		     parent => <-.<-.UImod_panel;
-		     width = 250;
-		     height = 108;
+
+	       UIlabel vol_title {
+		  parent => <-.UImod_panel;
+		  label = "Configuration";
+		  width => parent.clientWidth;
+		  color {
+		     foregroundColor = "white";
+		     backgroundColor = "blue";
 		  };
-		  UIlabel vol_label {
-		     parent => <-.vol_frame;
-		     label = "Rendering Options";
-		     width = 250;
-		     alignment = 1;
+	       };	 
+	       
+	       UItoggle fatray_toggle {
+		  parent => <-.UImod_panel;
+		  label = "Use fat rays";
+		  set => <-.<-.<-.<-.DataObject.Props.fat_ray;
+	       };
+	       
+	       UIlabel manip_label {
+		  parent => <-.UImod_panel;
+		  label = "Volume manipulation:";
+		  width = 128;
+		  alignment = 2;
+	       };
+	       UItoggle manip_toggle {
+		  parent => <-.UImod_panel;
+		  label = "fast...";
+		  set => <-.<-.<-.<-.DataObject.Obj.use_altobj;
+		  x => <-.manip_label.x + <-.manip_label.width;
+		  y => <-.manip_label.y;
+	       };
+	       UIoptionMenu manip_menu {
+		  parent => <-.UImod_panel;
+		  cmdList => {
+		     <-.opt0, <-.opt1
 		  };
-		  
-		  UItoggle fatray_toggle {
-		     parent => <-.vol_frame;
-		     label = "Use fat rays";
-		     set => <-.<-.<-.<-.<-.DataObject.Props.fat_ray;
-		  };
-		  
-		  UIlabel manip_label {
-		     parent => <-.vol_frame;
-		     label = "Volume manipulation:";
-		     width = 128;
-		     alignment = 2;
-		  };
-		  UItoggle manip_toggle {
-		     parent => <-.vol_frame;
-		     label = "fast...";
-		     set => <-.<-.<-.<-.<-.DataObject.Obj.use_altobj;
-		     x => <-.manip_label.x + <-.manip_label.width;
-		     y => <-.manip_label.y;
-		  };
-		  UIoptionMenu manip_menu {
-		     parent => <-.vol_frame;
-		     cmdList => {
-			<-.opt0, <-.opt1
-		     };
-		     selectedItem = 0;
-		     active => <-.manip_toggle.set;
-		     label = "";
-		     x => <-.manip_label.x + <-.manip_label.width;
-		  };
-		  UIoption opt0 {
-		     label = "bounds";
-		  };
-		  UIoption opt1 {
-		     label = "fat rays";
-		  };
-		  
-		  int manip_mode[5] => {1,1,1,(1 + (manip_menu.selectedItem * 2)),(2 + manip_menu.selectedItem)};
-	       }; // VolumeUI
+		  selectedItem = 0;
+		  active => <-.manip_toggle.set;
+		  label = "";
+		  x => <-.manip_label.x + <-.manip_label.width;
+	       };
+	       UIoption opt0 {
+		  label = "bounds";
+	       };
+	       UIoption opt1 {
+		  label = "fat rays";
+	       };
+	       
+	       int manip_mode[5] => {1,1,1,(1 + (manip_menu.selectedItem * 2)),(2 + manip_menu.selectedItem)};
 	    };
 	 };
       };
-
+      
       MODS.Read_Field Read_Field {
 	 read_field_ui {
 	    file_browser {
@@ -172,7 +168,7 @@ flibrary RealityGridLB3DApps {
 	       inherit = 0;
 	    };
 	    AltModes {
-	       mode => <-.<-.<-.RealityGridLB3DReader.RealityGridSteerer.RealityGridSteererUI.VolumeUI.manip_mode;
+	       mode => <-.<-.<-.RealityGridLB3DReader.RealityGridSteerer.RealityGridSteererUI.manip_mode;
 	    };
 	 };
       };
@@ -241,5 +237,4 @@ flibrary RealityGridLB3DApps {
       };
 
    }; // RealityGridLB3DVolumeViewerExample
-
 }; // RealityGridLB3DApps
