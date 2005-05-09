@@ -57,85 +57,76 @@ flibrary RealityGridMacs {
 	    width = 250;
 	 };
 
-	 macro ConfigUI {
-	    UIframe config_frame {
-	       parent => <-.<-.UImod_panel;
-	       width = 250;
-	       height = 90;
+	 UIlabel config_title {
+	    parent => <-.UImod_panel;
+	    label = "Configuration";
+	    width => parent.clientWidth;
+	    color {
+	       foregroundColor = "white";
+	       backgroundColor = "blue";
 	    };
-	    UIlabel config_label {
-	       parent => <-.config_frame;
-	       label = "Configuration";
-	       width = 250;
-	       alignment = 1;
-	    };
-	    
-	    UIlabel name_label {
-	       parent => <-.config_frame;
-	       label = "SGS name:";
-	       width = 85;
-	       alignment = 2;
-	    };
-	    UItext name_text {
-	       parent => <-.config_frame;
-	       text => <-.<-.<-.RealityGridSteeringParams.reg_sgs_name;
-	       width = 160;
-	       x => <-.name_label.x + <-.name_label.width;
-	       y => <-.name_label.y;
-	    };
+	 };	 
+	 
+	 UIlabel name_label {
+	    parent => <-.UImod_panel;
+	    label = "SGS name:";
+	    width = 85;
+	    alignment = 2;
+	 };
+	 UItext name_text {
+	    parent => <-.UImod_panel;
+	    text => <-.<-.RealityGridSteeringParams.reg_sgs_name;
+	    width = 160;
+	    x => <-.name_label.x + <-.name_label.width;
+	    y => <-.name_label.y;
+	 };
 
-	    UIlabel sgs_label {
-	       parent => <-.config_frame;
-	       label = "SGS address:";
-	       width = 85;
-	       alignment = 2;
-	    };
-	    UItext sgs_text {
-	       parent => <-.config_frame;
-	       text => <-.<-.<-.RealityGridSteeringParams.reg_sgs_address;
-	       width = 160;
-	       x => <-.sgs_label.x + <-.sgs_label.width;
-	       y => <-.sgs_label.y;
-	    };
-	 }; // ConfigUI
+	 UIlabel sgs_label {
+	    parent => <-.UImod_panel;
+	    label = "SGS address:";
+	    width = 85;
+	    alignment = 2;
+	 };
+	 UItext sgs_text {
+	    parent => <-.UImod_panel;
+	    text => <-.<-.RealityGridSteeringParams.reg_sgs_address;
+	    width = 160;
+	    x => <-.sgs_label.x + <-.sgs_label.width;
+	    y => <-.sgs_label.y;
+	 };
 
-	 macro ControlUI {
-	    UIframe control_frame {
-	       parent => <-.<-.UImod_panel;
-	       width = 250;
-	       height = 138;
+	 UIlabel control_title {
+	    parent => <-.UImod_panel;
+	    label = "Control";
+	    width => parent.clientWidth;
+	    color {
+	       foregroundColor = "white";
+	       backgroundColor = "blue";
 	    };
-	    UIlabel control_label {
-	       parent => <-.control_frame;
-	       label = "Control";
-	       width = 250;
-	       alignment = 1;
-	    };
-
-	    UIslider poll_slider {
-	       parent => <-.control_frame;
-	       title = "Data polling interval (secs)";
-	       mode = "real";
-	       decimalPoints = 1;
-	       min = 0.1;
-	       max = 15.0;
-	       width = 245;
-	       value => <-.<-.<-.RealityGridSteeringParams.pollInterval;
-	    };
-	    
-	    UItoggle start_toggle {
-	       parent => <-.control_frame;
-	       label = "Connect";
-	       set => <-.<-.<-.RealityGridSteeringMod.start;
-	    };
-	    
-	    UItoggle poll_toggle {
-	       parent => <-.control_frame;
-	       label = "Poll for data";
-	       set => <-.<-.<-.RealityGridSteeringMod.nudge;
-	    };
-
-	 }; // ControlUI
+	 };
+	 
+	 UIslider poll_slider {
+	    parent => <-.UImod_panel;
+	    title = "Data polling interval (secs)";
+	    mode = "real";
+	    decimalPoints = 1;
+	    min = 0.1;
+	    max = 15.0;
+	    width = 245;
+	    value => <-.<-.RealityGridSteeringParams.pollInterval;
+	 };
+	 
+	 UItoggle start_toggle {
+	    parent => <-.UImod_panel;
+	    label = "Connect";
+	    set => <-.<-.RealityGridSteeringMod.start;
+	 };
+	 
+	 UItoggle poll_toggle {
+	    parent => <-.UImod_panel;
+	    label = "Poll for data";
+	    set => <-.<-.RealityGridSteeringMod.nudge;
+	 };
       }; // RealityGridSteererUI
    }; // RealityGridSteerer
 
