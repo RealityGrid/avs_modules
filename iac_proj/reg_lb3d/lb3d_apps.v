@@ -60,9 +60,6 @@ flibrary RealityGridLB3DApps {
 		  renderer => "Software";
 		  output_enabled = 1;
 	       };
-	       FieldOutput {
-		  output<NEportLevels={0,5}>;
-	       };
 	    };
 	    Camera {
 	       Camera {
