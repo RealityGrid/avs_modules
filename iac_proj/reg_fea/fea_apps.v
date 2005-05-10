@@ -61,37 +61,6 @@ flibrary RealityGridFEAApps {
 		     set = 1;
 		  };
 	       };
-	       ConfigUI {
-		  config_frame {
-		     y = 0;
-		  };
-		  config_label {
-		     y = 0;
-		  };
-		  name_label {
-		     y = 24;
-		  };
-		  sgs_label {
-		     y = 54;
-		  };
-	       };
-	       ControlUI {
-		  control_frame {
-		     y = 90;
-		  };
-		  control_label {
-		     y = 0;
-		  };
-		  poll_slider {
-		     y = 24;
-		  };
-		  start_toggle {
-		     y = 84;
-		  };
-		  poll_toggle {
-		     y = 108;
-		  };
-	       };
 	    };
 	 };
       };
