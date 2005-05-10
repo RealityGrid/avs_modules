@@ -71,8 +71,41 @@ flibrary RealityGridFEAMacs {
 	    UImod_panel {
 	       title = "RealityGrid FEA Reader";
 	    };
-	 };
-	 
+
+	    UIlabel disps_title {
+	       parent => <-.UImod_panel;
+	       label = "Displacements";
+	       width => parent.clientWidth;
+	       color {
+		  foregroundColor = "white";
+		  backgroundColor = "blue";
+	       };
+	    };	 
+
+	    UIslider disps_slider {
+	       parent => <-.UImod_panel;
+	       title = "Displacement scaling";
+	       mode = "real";
+	       decimalPoints = 1;
+	       min = 0.1;
+	       max = 50.0;
+	       width = 245;
+	       value => <-.<-.<-.ReG_coord_maths.scale;
+	    };
+
+	    /*
+	    UIlabel stress_title {
+	       parent => <-.UImod_panel;
+	       label = "Stresses";
+	       width => parent.clientWidth;
+	       color {
+		  foregroundColor = "white";
+		  backgroundColor = "blue";
+	       };
+	    };
+	    */
+
+	 }; // RealityGridSteererUI
       };
 
       IAC_PROJ.RealityGridFEA.RealityGridFEAMods.RealityGridFEAReaderMod RealityGridFEAReaderMod {
