@@ -45,14 +45,19 @@ flibrary RealityGridFEAApps {
 	    };
 	 };
       };
+      
       GDM.Uviewer3D Uviewer3D {
 	 Scene {
 	    Top {
 	       child_objs => {
-	       <-.<-.<-.external_faces.out_obj,<-.<-.<-.external_edges.out_obj};
+		  <-.<-.<-.external_faces.out_obj,
+	          <-.<-.<-.LegendHoriz.GroupObject.obj,
+		  <-.<-.<-.Basic_Axis3D.out_obj
+	       };
 	    };
 	 };
       };
+   
       IAC_PROJ.RealityGridFEA.RealityGridFEAMacs.RealityGridFEAReader RealityGridFEAReader {
 	 RealityGridSteerer {
 	    RealityGridSteererUI {
@@ -64,11 +69,83 @@ flibrary RealityGridFEAApps {
 	    };
 	 };
       };
-      MODS.external_edges external_edges {
-	 in_field => <-.RealityGridFEAReader.outData;
+   
+      MODS.extract_scalar extract_scalar {
+	 in_field => <-.RealityGridFEAReader.outDataDisps;
       };
+   
+      MODS.set_minmax set_minmax {
+	 in_field => <-.extract_scalar.out_fld;
+	 SetMinMaxUI {
+	    min_typein {
+	       x = 0;
+	    };
+	    max_typein {
+	       x = 0;
+	    };
+	 };
+      };
+   
       MODS.external_faces external_faces {
-	 in_field => <-.RealityGridFEAReader.outData;
+	 in_field => <-.set_minmax.out_fld;
+      };
+   
+      GEOMS.LegendHoriz LegendHoriz {
+	 obj_in => <-.set_minmax.out_obj;
+      };
+   
+      HLM.Basic_Axis3D Basic_Axis3D {
+	 axis {
+	    xform {
+	       xlate = {-0.1,-0.1,-0.1};
+	    };
+	 };
+	 panel {
+	    option {
+	       set = 0;
+	    };
+	 };
+	 text_glyph {
+	    TextUI {
+	       AlignHorizMenu {
+		  selectedItem = 1;
+	       };
+	       Background {
+		  set = 1;
+	       };
+	       UIoption {
+		  set = 0;
+	       };
+	       UIoption#1 {
+		  set = 1;
+	       };
+	       Font {
+		  text = "-adobe-helvetica-bold-r-*-*-20-*-*-*-*-*-*-*";
+	       };
+	    };
+	 };
+	 Axis_UI<instanced=0> {
+	    probe_edit {
+	       GDxform_editor {
+		  x_trans = -0.1;
+		  y_trans = -0.1;
+		  z_trans = -0.1;
+		  abs_x_trans = -0.1000000015;
+		  abs_y_trans = -0.1000000015;
+		  abs_z_trans = -0.1000000015;
+	       };
+	       XformEditorUI {
+		  trans_shell {
+		     x = 403;
+		     y = 200;
+		     ok = 1;
+		  };
+	       };
+	    };
+	 };
+	 Axis_scale_X = 0.5;
+	 Axis_scale_Y = 0.5;
+	 Axis_scale_Z = 0.5;
       };
    }; // RealityGridFEAReaderExample
 }; // RealityGridFEAApps
