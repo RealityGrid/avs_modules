@@ -37,7 +37,12 @@ flibrary RealityGridHMDApps {
 	    IUI {
 	       optionList {
 		  cmdList => {
-		     <-.<-.<-.<-.RealityGridSteerer.RealityGridSteererUI.UImod_panel.option,<-.<-.<-.<-.isosurface.UIpanel.option,<-.<-.<-.<-.Vector.panel.option
+		     <-.<-.<-.<-.RealityGridSteerer.RealityGridSteererUI.UImod_panel.option,
+		     <-.<-.<-.<-.isosurface.UIpanel.option,
+		     <-.<-.<-.<-.Vector.panel.option,
+		     <-.<-.<-.<-.bounds.UIpanel.option,
+		     <-.<-.<-.<-.glyph.UIpanel.option,
+		     <-.<-.<-.<-.Box.box_ui.panel.option
 		  };
 		  selectedItem = 0;
 	       };
@@ -52,7 +57,10 @@ flibrary RealityGridHMDApps {
 	 Scene {
 	    Top {
 	       child_objs => {
-		  <-.<-.<-.isosurface.out_obj,<-.<-.<-.Vector.out_obj
+		  <-.<-.<-.isosurface.out_obj,
+		  <-.<-.<-.Vector.out_obj,
+		  <-.<-.<-.bounds.out_obj,
+		  <-.<-.<-.glyph.out_obj
 	       };
 	    };
 	    Lights {
@@ -178,5 +186,68 @@ flibrary RealityGridHMDApps {
 	 };
 	 in_field => <-.uniform_vector_field.out;
       };
-   };
-};
+
+      MODS.bounds bounds {
+	 in_field => <-.uniform_vector_field.out;
+	 BoundsUI {
+	    DVnode_data_labels {
+	       labels[];
+	    };
+	    UIradioBoxLabel {
+	       label_cmd {
+		  cmd[];
+	       };
+	    };
+	 };
+      };
+      
+      MODS.glyph glyph {
+	 in_field => <-.uniform_vector_field.out;
+	 in_glyph => <-.Box.out_fld;
+	 GlyphParam {
+	    vector = 0;
+	    scale = 2.0;
+	    scale_x = 1;
+	    scale_y = 1;
+	    scale_z = 0;
+	    normalize = 1;
+	 };
+	 obj {
+	    Modes {
+	       mode = {0,2,1,0,0};
+	    };
+	 };
+      };
+
+      GEOMS.Box Box {
+	 box {
+	    xform {
+	       xlate = {-0.5,-0.5,-0.5};
+	    };
+	 };
+	 box_ui {
+	    probe_edit {
+	       GDxform_editor {
+		  x_trans = -0.5;
+		  y_trans = -0.5;
+		  z_trans = -0.5;
+		  x_cent = 0.;
+		  y_cent = 0.;
+		  z_cent = 0.;
+		  abs_x_cent = 0.;
+		  abs_y_cent = 0.;
+		  abs_z_cent = 0.;
+		  abs_x_trans = -0.5;
+		  abs_y_trans = -0.5;
+		  abs_scale = 1.;
+		  abs_z_trans = -0.5;
+	       };
+	    };
+	 };
+	 dim1 = 2;
+	 dim2 = 2;
+	 dim3 = 2;
+      };
+      
+   };  // RealityGridHydroExample
+};  // flibrary
