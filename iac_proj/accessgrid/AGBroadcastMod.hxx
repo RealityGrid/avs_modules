@@ -35,6 +35,7 @@
 #ifndef __AGBROADCASTMOD_HXX__
 
 #include <cstring>
+#include <cmath>
 
 #include "flxmitter.h"
 #include "imagepool.h"
