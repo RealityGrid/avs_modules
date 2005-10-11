@@ -35,6 +35,7 @@
 #ifndef __REGSTEERMOD_HXX__
 
 #include "ReG_Steer_Appside.h"
+#include "ReG_Steer_Browser.h"
 #include <cstring>
 
 class RealityGrid_RealityGridSteeringMod;
@@ -74,17 +75,21 @@ public:
 
   // get and set the parent of this instance
   RealityGrid_RealityGridSteeringMod* getParent();
-  void setParent(RealityGrid_RealityGridSteeringMod* p);
+  void setParent(RealityGrid_RealityGridSteeringMod*);
 
   // accessors
   bool isRunning();
   char* getError();
 
   // set up the steering mod
-  bool init(char* name, char* sgs_address);
+  bool init(char*, char*, char*);
+
+  // SWS interface methods
+  bool getRegistryInfo(char*);
+  bool createSWS(bool, char*, char*, char*, char*, char*, char*, char*, int);
 
   // interface methods to the steering library
-  bool poll(int* numCommands);
+  bool poll(int*);
   bool getData();
 };
 

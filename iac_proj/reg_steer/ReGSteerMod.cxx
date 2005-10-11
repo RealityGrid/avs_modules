@@ -35,6 +35,14 @@
 #include <iostream>
 
 #include "ReG_Steer_Appside.h"
+#include "ReG_Steer_types.h"
+#include "ReG_Steer_Browser.h"
+#include "ReG_Steer_Common.h"
+#include "ReG_Steer_Utils.h"
+#include "ReG_Steer_Utils_WSRF.h"
+#include "ReG_Steer_XML.h"
+#include "ReG_Steer_Steerside_WSRF.h"
+#include "soapH.h"
 #include "ReGSteerMod.hxx"
 #include "reg_gen.hxx"
 
@@ -93,7 +101,7 @@ char* ReGSteerMod::getError() {
   return error;
 }
 
-bool ReGSteerMod::init(char* name, char* sgs_address) {
+bool ReGSteerMod::init(char* name, char* sgs_address, char* iotype_label) {
   int status;
 
   // Enable and initialize the steering library...
@@ -105,7 +113,7 @@ bool ReGSteerMod::init(char* name, char* sgs_address) {
   }
 
   // register the input IO channel
-  iotype_labels[0] = "AVS_Data_Consumer";
+  iotype_labels[0] = iotype_label;
   iotype_dir[0] = REG_IO_IN;
   iotype_frequency[0] = 1; // Attempt to consume data at every step
   num_iotypes = 1;
@@ -116,6 +124,216 @@ bool ReGSteerMod::init(char* name, char* sgs_address) {
   }
 
   initialized = true;
+  return true;
+}
+
+bool ReGSteerMod::getRegistryInfo(char* registryEPR) {
+  int status;
+  int num_reg_entries;
+  int num_service_groups;
+  registry_entry* reg_entries = NULL;
+  char* current_time;
+  char summary[REG_MAX_STRING_LENGTH];
+
+  // get current date and time for SWS...
+  current_time = Get_current_time_string();
+  parent->configuration.reg_sgs_start_time.set_str_val(current_time);
+
+  // get entire list of SWS's in the registry...
+  status = Get_registry_entries(registryEPR, &num_reg_entries, &reg_entries);
+  if(status != REG_SUCCESS) {
+    error = "Could not get registry entries.";
+    return false;
+  }
+
+  // get the containers...
+  num_service_groups = 0;
+  parent->configuration.registry_info.num_containers = 0;
+  for(int i = 0; i < num_reg_entries; i++) {
+    if(strncmp(reg_entries[i].service_type, "ServiceGroup", 12) == 0) {
+
+      // need to ignore these later...
+      num_service_groups++;
+
+      // only want container lists...
+      if(strncmp(reg_entries[i].job_description, "Container registry", 18) == 0) {
+	int num_containers;
+	registry_entry* containers = NULL;
+
+	status = Get_registry_entries(reg_entries[i].gsh, &num_containers, &containers);
+	if(status != REG_SUCCESS) {
+	  error = "Could not get containers.";
+	  return false;
+	}
+
+	parent->configuration.registry_info.num_containers += num_containers;
+	for(int j = 0; j < num_containers; j++) {
+	  parent->configuration.registry_info.containers.set_str_array_val(j, containers[j].gsh);
+	}
+
+	if(containers)
+	  free(containers);
+      }
+    }
+  }
+
+  // populate the internal registry info...
+  parent->configuration.registry_info.num_entries = (num_reg_entries - num_service_groups);
+
+  int j = 0;
+  for(int i = 0; i < num_reg_entries; i++) {
+    if(strncmp(reg_entries[i].service_type, "SWS", 3) == 0) {
+      parent->configuration.registry_info.gsh.set_str_array_val(j, reg_entries[i].gsh);
+      parent->configuration.registry_info.entry_gsh.set_str_array_val(j, reg_entries[i].entry_gsh);
+      parent->configuration.registry_info.app_name.set_str_array_val(j, reg_entries[i].application);
+      parent->configuration.registry_info.user_name.set_str_array_val(j, reg_entries[i].user);
+      parent->configuration.registry_info.org_name.set_str_array_val(j, reg_entries[i].group);
+      parent->configuration.registry_info.start_time.set_str_array_val(j, reg_entries[i].start_date_time);
+      parent->configuration.registry_info.description.set_str_array_val(j, reg_entries[i].job_description);
+
+      // generate summary descriptions of the SWS's...
+      sprintf(summary, "%s, %s, %s, %s", reg_entries[i].application,
+	      reg_entries[i].user,
+	      reg_entries[i].job_description,
+	      reg_entries[i].start_date_time);
+      parent->configuration.registry_info.summary.set_str_array_val(j, summary);
+
+      j++;
+    }
+  }
+
+  // clean up...
+  if(num_reg_entries > 0)
+    free(reg_entries);
+
+  return true;
+}
+
+bool ReGSteerMod::createSWS(bool vis, char* dataSource, char* container,
+			    char* registry, char* username, char* group,
+			    char* application, char* purpose, int lifetime) {
+  char* EPR;
+  char iodef_label[REG_MAX_STRING_LENGTH];
+  soap mySoap;
+  wsrp__SetResourcePropertiesResponse response;
+
+  // sort out iotypes for connecting to sim here if necessary...
+  if(vis && dataSource != NULL) {
+    msg_struct* msg;
+    xmlDocPtr doc;
+    xmlNsPtr   ns;
+    xmlNodePtr cur;
+    io_struct* ioPtr;
+    char* ioTypes;
+
+    // get IOTypes from the data source...
+    soap_init(&mySoap);
+    if(Get_resource_property(&mySoap,
+			     dataSource,
+			     "ioTypeDefinitions",
+			     &ioTypes) != REG_SUCCESS) {
+      error = "Call to get ioTypeDefinitions ResourceProperty failed.";
+      printf("%s\n", dataSource);
+      soap_end(&mySoap);
+      soap_done(&mySoap);
+      return false;
+    }
+
+    // parse IOTypes...
+    if(!(doc = xmlParseMemory(ioTypes, strlen(ioTypes))) ||
+       !(cur = xmlDocGetRootElement(doc))) {
+      error = "Hit error parsing IOTypes.";
+      xmlFreeDoc(doc);
+      xmlCleanupParser();
+      soap_end(&mySoap);
+      soap_done(&mySoap);
+      return false;
+    }
+
+    ns = xmlSearchNsByHref(doc, cur,
+                  (const xmlChar*) "http://www.realitygrid.org/xml/steering");
+
+    if(xmlStrcmp(cur->name, (const xmlChar*) "ioTypeDefinitions")) {
+      error = "ioTypeDefinitions not the root element.";
+      xmlFreeDoc(doc);
+      xmlCleanupParser();
+      soap_end(&mySoap);
+      soap_done(&mySoap);
+      return false;
+    }
+
+    // Step down to ReG_steer_message and then to IOType_defs
+    cur = cur->xmlChildrenNode->xmlChildrenNode;
+
+    msg = New_msg_struct();
+    msg->io_def = New_io_def_struct();
+    parseIOTypeDef(doc, ns, cur, msg->io_def);
+    Print_msg(msg);
+
+    if(!(ioPtr = msg->io_def->first_io)) {
+      error = "Got no IOType definitions from data source.";
+      xmlFreeDoc(doc);
+      xmlCleanupParser();
+      soap_end(&mySoap);
+      soap_done(&mySoap);
+      return false;
+    }
+
+    // HACK: just grab first "OUT" IOType...
+    while(ioPtr) {
+      if(!xmlStrcmp(ioPtr->direction, (const xmlChar*) "OUT")) {
+	strncpy(iodef_label, (char*)(ioPtr->label), REG_MAX_STRING_LENGTH);
+	break;
+      }
+      ioPtr = ioPtr->next;
+    }
+
+    // clean up...
+    Delete_msg_struct(&msg);
+    xmlFreeDoc(doc);
+    xmlCleanupParser();
+  }
+  else if(vis && dataSource == NULL) {
+    error = "No SWS provided to connect to.";
+    return false;
+  }
+
+  // create the SWS...
+  EPR = Create_steering_service(lifetime, container, registry, username,
+				group, application, purpose, "", "");
+
+  if(!EPR) {
+    error = "Failed to create SWS.";
+    return false;
+  }
+  else
+    printf("SWS: %s\n\n", EPR);
+
+  // set data source on SWS if necessary...
+  if(vis) {
+    char message[REG_MAX_STRING_LENGTH];
+
+    snprintf(message, REG_MAX_STRING_LENGTH,
+	     "<dataSource><sourceEPR>%s</sourceEPR>"
+	     "<sourceLabel>%s</sourceLabel></dataSource>",
+	     dataSource, iodef_label);
+
+    if(soap_call_wsrp__SetResourceProperties(&mySoap, EPR, "", message,
+					     &response) != SOAP_OK) {
+      error = "soap call went bad.";
+      soap_end(&mySoap);
+      soap_done(&mySoap);
+      return false;
+    }
+
+    // clean up soap...
+    soap_end(&mySoap);
+    soap_done(&mySoap);
+  }
+
+  // save to the network...
+  parent->configuration.reg_sgs_address.set_str_val(EPR);
+
   return true;
 }
 
