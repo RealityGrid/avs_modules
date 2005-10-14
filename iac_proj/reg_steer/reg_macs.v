@@ -321,6 +321,7 @@ flibrary RealityGridMacs {
 	       y => (<-.connect_label.y + <-.connect_label.height);
 	       width => (parent.width - 8);
 	       active => switch((<-.io_dir.selectedItem + 1), 1, 0, 1);
+	       stringdims => <-.<-.<-.RealityGridSteeringParams.registry_info.num_entries;
 	       strings => <-.<-.<-.RealityGridSteeringParams.registry_info.summary;
 	       selectedItem => <-.<-.<-.RealityGridSteeringParams.reg_sgs_source_index;
 	    };
@@ -337,6 +338,7 @@ flibrary RealityGridMacs {
 	       x = 3;
 	       y => (<-.container_label.y + <-.container_label.height);
 	       width => (parent.width  - 8);
+	       stringdims => <-.<-.<-.RealityGridSteeringParams.registry_info.num_containers;
 	       strings => <-.<-.<-.RealityGridSteeringParams.registry_info.containers;
 	       selectedText => <-.<-.<-.RealityGridSteeringParams.use_container;
 	    };
