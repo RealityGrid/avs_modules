@@ -1,6 +1,7 @@
 
 #include "UIpassword.hxx"
 
+// set RHDEBUG to turn on debug statements
 #ifdef RHDEBUG
 #define DBPRINT(string) fprintf(stderr, string)
 #else
@@ -112,7 +113,7 @@ void UIpassword::destroyObject() {
 
 void UIpassword::updateResources(Widget passwd, int seq_num) {
   OMobj_id sub_id;
-  char* disp_str;
+  char* disp_str = NULL;
 
   DBPRINT("UIpassword::updateResources\n");
 
@@ -122,18 +123,43 @@ void UIpassword::updateResources(Widget passwd, int seq_num) {
     if(GetIntVal(ObjId, "showLastPosition", &show_last_pos) != OM_STAT_SUCCESS )
       show_last_pos = 0;
   }
-#if 0
+
   // update display_char
-  sub_id = OMfind_subobj(ObjId, OMstr_to_name("display"), OM_OBJ_RD);
+  char old_disp_char = display_char;
+  sub_id = OMfind_subobj(ObjId, OMstr_to_name("display_char"), OM_OBJ_RD);
   if(OMget_obj_seq(sub_id, OMnull_obj, OM_SEQ_VAL) > seq_num) {
     if(GetStrVal(ObjId, "display_char", &disp_str, 0) != OM_STAT_SUCCESS)
       display_char = '*';
     else {
-      display_char = disp_str[0];
+      if((strlen(disp_str) > 0) && (disp_str[0] != '\0'))
+	display_char = disp_str[0];
     }
     if(disp_str) free(disp_str);
   }
-#endif
+
+  if(display_char != old_disp_char) {
+    // need to reinput the string so that the chars
+    // that are displayed are changed
+    DBPRINT("New display char!\n");
+    char* curr_passwd;
+    XmTextPosition pos;
+
+    // copy password
+    curr_passwd = XtMalloc(strlen(password) + 1);
+    strcpy(curr_passwd, password);
+
+    // re-enter password - this doubles the length of the
+    // internally stored password!
+    pos = XmTextGetInsertionPosition(passwd);
+    XmTextSetString(passwd, password);
+    XmTextSetInsertionPosition(passwd, pos);
+
+    // set the internally stored password to point
+    // at the original again...
+    if(password) XtFree(password);
+    password = curr_passwd;
+  }
+
   // update core resources
   UIcore::setResources(passwd, seq_num);
   
@@ -175,7 +201,7 @@ void UIpassword::callback(Widget w, UIpassword* pw, XmTextVerifyCallbackStruct* 
 
   if(cbs->reason == XmCR_ACTIVATE) {
     DBPRINT("Activate!\n");
-    // can only be here on activate callback!
+    // can only be here on activate callback (ie. RETURN key)!
     OMobj_id sub_id;
     
     sub_id = OMfind_subobj(pw->ObjId,  OMstr_to_name("text"), OM_OBJ_RW);
@@ -201,13 +227,6 @@ void UIpassword::callback(Widget w, UIpassword* pw, XmTextVerifyCallbackStruct* 
   int len = XmTextGetLastPosition(w);
   if(cbs->currInsert < len) {
     DBPRINT("No inserting!\n");
-    cbs->doit = False;
-    return;
-  }
-
-  // don't allow paste!
-  if(cbs->text->length > 1) {
-    DBPRINT("No pasting!\n");
     cbs->doit = False;
     return;
   }
