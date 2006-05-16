@@ -51,7 +51,8 @@ public:
   virtual void destroyObject();
 
 private:
-  static void callback(Widget, UIpassword*, XmTextVerifyCallbackStruct*);
+  static void obscure(Widget, UIpassword*, XmTextVerifyCallbackStruct*);
+  static void activate(Widget, UIpassword*, XtPointer);
   void updateResources(Widget, int);
   char* password;
   char display_char;
