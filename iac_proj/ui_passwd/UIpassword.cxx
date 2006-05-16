@@ -137,7 +137,7 @@ void UIpassword::updateResources(Widget passwd, int seq_num) {
     if(disp_str) free(disp_str);
   }
 
-  if(display_char != old_disp_char) {
+  if((display_char != old_disp_char) && (strlen(password) > 0)) {
     // need to reinput the string so that the chars
     // that are displayed are changed
     DBPRINT("New display char!\n");
@@ -155,9 +155,19 @@ void UIpassword::updateResources(Widget passwd, int seq_num) {
     XmTextSetInsertionPosition(passwd, pos);
 
     // set the internally stored password to point
-    // at the original again...
+    //at the original again...
     if(password) XtFree(password);
     password = curr_passwd;
+
+    // ...and update the pointer in the network editor...
+    sub_id = OMfind_subobj(ObjId, OMstr_to_name("password"), OM_OBJ_RW);
+    OMpush_ctx(ObjId, OM_STATE_USR, 0, 0);
+    OMset_ptr_val(sub_id, (void*) password, 0);
+    OMpop_ctx(ObjId);
+
+#ifdef RHDEBUG
+    fprintf(stderr, "Password: %s, pointer: 0x%x\n", password, password);
+#endif
   }
 
   // update core resources
@@ -201,13 +211,20 @@ void UIpassword::callback(Widget w, UIpassword* pw, XmTextVerifyCallbackStruct* 
 
   if(cbs->reason == XmCR_ACTIVATE) {
     DBPRINT("Activate!\n");
+#ifdef RHDEBUG
+    fprintf(stderr, "Password: %s, pointer: 0x%x\n", pw->password, pw->password);
+#endif
+
     // can only be here on activate callback (ie. RETURN key)!
+    OMobj_id sub_id_t;
     OMobj_id sub_id;
     
-    sub_id = OMfind_subobj(pw->ObjId,  OMstr_to_name("text"), OM_OBJ_RW);
+    sub_id_t = OMfind_subobj(pw->ObjId, OMstr_to_name("text"), OM_OBJ_RW);
+    sub_id = OMfind_subobj(pw->ObjId, OMstr_to_name("password"), OM_OBJ_RW);
     
     OMpush_ctx(pw->ObjId, OM_STATE_USR, 0, 0);
-    OMset_str_val(sub_id, pw->password);
+    OMset_str_val(sub_id_t, pw->password);
+    OMset_ptr_val(sub_id, (void*) pw->password, 0);
     OMpop_ctx(pw->ObjId);
     return;
   }
@@ -217,9 +234,6 @@ void UIpassword::callback(Widget w, UIpassword* pw, XmTextVerifyCallbackStruct* 
     DBPRINT("Delete!\n");
     cbs->endPos = strlen(pw->password);
     pw->password[cbs->startPos] = '\0';
-
-    DBPRINT(pw->password);
-    DBPRINT("\n");
     return;
   }
 
@@ -247,8 +261,6 @@ void UIpassword::callback(Widget w, UIpassword* pw, XmTextVerifyCallbackStruct* 
   for(int i = 0; i < cbs->text->length; i++) {
     cbs->text->ptr[i] = pw->display_char;
   }
-  DBPRINT(pw->password);
-  DBPRINT("\n");
 }
 
 // numpty wrapper functions...
@@ -262,4 +274,29 @@ void UIpassword::updateObject(OMobj_id obj) {
 
 void UIpassword::destroyObject(OMobj_id obj) {
   return destroyObject();
+}
+
+//
+// Test code
+//
+int UIpasswordDisplay(OMobj_id id, OMevent_mask event_mask, int seq_num) {
+  OMobj_id sub_id;
+  char* passwd;
+  int status;
+
+  sub_id = OMfind_subobj(id, OMstr_to_name("password"), OM_OBJ_RW);
+  status = OMget_ptr_val(sub_id, (void**) &passwd, 0);
+
+  if(status == OM_STAT_SUCCESS) {
+#ifdef RHDEBUG
+    fprintf(stderr, "Password: %s, pointer: 0x%x\n", passwd, passwd);
+#endif
+
+    sub_id = OMfind_subobj(id, OMstr_to_name("text"), OM_OBJ_RW);
+    OMpush_ctx(id, OM_STATE_USR, OM_CTX_ALL_NOTIFIES, 0);
+    OMset_str_val(sub_id, passwd);
+    OMpop_ctx(id);
+  };
+
+  return 1;
 }
