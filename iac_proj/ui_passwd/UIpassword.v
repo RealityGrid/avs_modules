@@ -26,20 +26,6 @@ flibrary UIpasswordMod <
       }; // UIpasswordTest
 
    APPS.MultiWindowApp UIpasswordExample {
-/*      UI {
-	 Modules {
-	    IUI {
-	       optionList {
-		  selectedItem = 0;
-	       };
-	       mod_panel {
-		  x = 0;
-		  y = 0;
-	       };
-	    };
-	 };
-      };
-  */    
       UImod_panel UImod_panel {
 	 option {
 	    set = 1;
@@ -71,7 +57,7 @@ flibrary UIpasswordMod <
 	 text = "*";
       };
       
-      IAC_PROJ.UIpasswordMod.UIpassword Password {
+      IAC_PROJ.UIpasswordMod.UIpassword password {
 	 parent => <-.UImod_panel;
 	 display_char => <-.char_input.text;
       };
@@ -79,16 +65,16 @@ flibrary UIpasswordMod <
       UIlabel arrow {
 	 parent => <-.UImod_panel;
 	 label = "->";
-	 x = <-.Password.x + <-.Password.width;
-	 y => <-.Password.y;
+	 x = <-.password.x + <-.password.width;
+	 y => <-.password.y;
 	 width = 20;
       };
       
-      IAC_PROJ.UIpasswordMod.UIpasswordTest Clear_text {
+      IAC_PROJ.UIpasswordMod.UIpasswordTest clear_text {
 	 parent => <-.UImod_panel;
-	 password => <-.Password.password;
+	 password => <-.password.password;
 	 x = <-.arrow.x + <-.arrow.width;
-	 y => <-.Password.y;
+	 y => <-.password.y;
       };
    }; // UIpasswordExample
    
