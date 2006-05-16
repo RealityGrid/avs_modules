@@ -9,7 +9,6 @@ flibrary UIpasswordMod <
       > {
 	 width = 100;
 	 height = 30;	
-	 string text;
 	 ptr+OPort2+nosave password;
 	 string+read+notify display_char = "*";
 	 int showLastPosition<NEvisible=0> = 0;
@@ -27,7 +26,7 @@ flibrary UIpasswordMod <
       }; // UIpasswordTest
 
    APPS.MultiWindowApp UIpasswordExample {
-      UI {
+/*      UI {
 	 Modules {
 	    IUI {
 	       optionList {
@@ -40,29 +39,56 @@ flibrary UIpasswordMod <
 	    };
 	 };
       };
+  */    
       UImod_panel UImod_panel {
 	 option {
 	    set = 1;
 	 };
       };
-      IAC_PROJ.UIpasswordMod.UIpassword UIpassword {
+      
+      UIlabel passwd_title {
 	 parent => <-.UImod_panel;
-	 y = 0;
-	 text = "";
+	 label = "UIpassword Tester";
+	 width => parent.clientWidth;
+	 color {
+	    foregroundColor = "white";
+	    backgroundColor = "blue";
+	 };
       };
-      IAC_PROJ.UIpasswordMod.UIpasswordTest UIpasswordTest {
+
+      UIlabel char_label {
 	 parent => <-.UImod_panel;
-	 text = "";
-	 password => <-.UIpassword.password;
-	 y = 0;
-	 x = 120;
+	 y => <-.passwd_title.y + 30;
+	 label = "Display char:";
       };
-      UIlabel UIlabel {
+
+      UItext char_input {
 	 parent => <-.UImod_panel;
-	 label => "->";
-	 x = 100;
-	 y = 0;
+	 x => <-.char_label.x + <-.char_label.width;
+	 y => <-.char_label.y;
+	 rows = 1;
+	 columns = 1;
+	 text = "*";
+      };
+      
+      IAC_PROJ.UIpasswordMod.UIpassword Password {
+	 parent => <-.UImod_panel;
+	 display_char => <-.char_input.text;
+      };
+      
+      UIlabel arrow {
+	 parent => <-.UImod_panel;
+	 label = "->";
+	 x = <-.Password.x + <-.Password.width;
+	 y => <-.Password.y;
 	 width = 20;
+      };
+      
+      IAC_PROJ.UIpasswordMod.UIpasswordTest Clear_text {
+	 parent => <-.UImod_panel;
+	 password => <-.Password.password;
+	 x = <-.arrow.x + <-.arrow.width;
+	 y => <-.Password.y;
       };
    }; // UIpasswordExample
    
