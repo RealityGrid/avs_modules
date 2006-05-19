@@ -1,17 +1,16 @@
 
 flibrary UIpasswordMod <
    build_dir="iac_proj/ui_passwd",
-   hdr_dirs="$(XP_PATH0)/tutor/UIimport/ui $(XP_PATH0)/motif_ui/ui",
+   hdr_dirs="$(XP_PATH0)/motif_ui/ui",
    cxx_name="" > {
 
    UIprimitive UIpassword<
       src_file="UIpassword.cxx"
       > {
 	 width = 100;
-	 height = 30;	
+	 height = 30;
 	 ptr+OPort2+nosave password;
 	 string+read+notify display_char = "*";
-	 int showLastPosition<NEvisible=0> = 0;
 	 omethod+notify_inst+notify update<NEvisible=0, interruptable=0, lang="cxx", use_src_file=0> =
 	    "UIpasswordUpdate";
       }; // UIpassword
@@ -65,7 +64,7 @@ flibrary UIpasswordMod <
       UIlabel arrow {
 	 parent => <-.UImod_panel;
 	 label = "->";
-	 x = <-.password.x + <-.password.width;
+	 x => <-.password.x + <-.password.width;
 	 y => <-.password.y;
 	 width = 20;
       };
@@ -73,7 +72,7 @@ flibrary UIpasswordMod <
       IAC_PROJ.UIpasswordMod.UIpasswordTest clear_text {
 	 parent => <-.UImod_panel;
 	 password => <-.password.password;
-	 x = <-.arrow.x + <-.arrow.width;
+	 x => <-.arrow.x + <-.arrow.width;
 	 y => <-.password.y;
       };
    }; // UIpasswordExample
