@@ -9,9 +9,13 @@
 #define DBPRINT(string)
 #endif
 
+// use wide APIs
+#define XP_WIDE_API
+
+// generate the update method automatically
 UI_UPDATE(UIpassword)
 
-UIpassword::UIpassword(OMobj_id obj) : UIimport(obj) {
+UIpassword::UIpassword(OMobj_id obj) : UIwindow(obj) {
   _classType = "UIpassword";
   password = NULL;
   display_char = '*';
@@ -22,19 +26,18 @@ UIpassword::~UIpassword() {
 }
 
 Boolean UIpassword::instanceObject() {
-  Widget parent;
   Widget passwd;
   int x, y;
-  int width, height;
+  int width = 0, height = 0;
+  int rows = 0, columns = 0;
   int status;
   OMobj_name obj_name;
 
   DBPRINT("UIpassword::instanceObject\n");
 
-  // get parent widget, x and y and autoplace if needs be
-  if(!(parent = getParentWidget())) return False;
-  autoPlacementManager(parent, &x, &y);
-
+  // get parent widget, name, x and y and autoplace if needs be
+  if(!(ParentWnd = getParentWidget())) return False;
+  autoPlacementManager(ParentWnd, &x, &y);
   OMget_obj_name(ObjId, &obj_name);
 
   // get width and height
@@ -45,7 +48,6 @@ Boolean UIpassword::instanceObject() {
   }
   else {
     width = 100;
-    UIsetOMWindowWidth(ObjId, width);
   }
 
   status = GetIntVal(ObjId, "height", &height);
@@ -55,25 +57,27 @@ Boolean UIpassword::instanceObject() {
   }
   else {
     height = 30;
-    UIsetOMWindowHeight(ObjId, height);
   }
 
   // create widget
   passwd = XtVaCreateManagedWidget(OMname_to_str(obj_name),
 				   xmTextWidgetClass,
-				   parent,
+				   ParentWnd,
 				   XmNx, x,
 				   XmNy, y,
+				   XmNuserData, this,
 				   XmNwidth, width,
 				   XmNheight, height,
-				   XmNuserData, this,
-				   XmNrows, 1,
 				   XmNeditMode, XmSINGLE_LINE_EDIT,
 				   NULL);
 
   DragAndDropDisable(passwd);
 
-  updateResources(passwd, -1);
+#ifndef irix4
+  XmDropSiteUnregister(passwd);
+#endif
+
+  setResources(passwd, -1);
 
   // attach callbacks
   XtAddCallback(passwd, XmNactivateCallback,
@@ -94,10 +98,10 @@ void UIpassword::updateObject(int seq_num) {
   if((passwd = handle.widget()) == NULL) return;
 
   // set resources
-  updateResources(passwd, seq_num);
+  setResources(passwd, seq_num);
 
   // update widget size, position, parent and visibility
-  UIimport::updateObject(seq_num);
+  UIwindow::updateObject(seq_num);
 }
 
 void UIpassword::destroyObject() {
@@ -109,21 +113,14 @@ void UIpassword::destroyObject() {
   }
 #endif
 
-  UIimport::destroyObject();
+  UIwindow::destroyObject();
 }
 
-void UIpassword::updateResources(Widget passwd, int seq_num) {
+void UIpassword::setResources(Widget passwd, int seq_num) {
   OMobj_id sub_id;
   char* disp_str = NULL;
 
-  DBPRINT("UIpassword::updateResources\n");
-
-  // update showLastPosition
-  sub_id = OMfind_subobj(ObjId, OMstr_to_name("showLastPosition"), OM_OBJ_RD);
-  if(OMget_obj_seq(sub_id, OMnull_obj, OM_SEQ_VAL) > seq_num) {
-    if(GetIntVal(ObjId, "showLastPosition", &show_last_pos) != OM_STAT_SUCCESS )
-      show_last_pos = 0;
-  }
+  DBPRINT("UIpassword::setResources\n");
 
   // update display_char
   char old_disp_char = display_char;
@@ -159,45 +156,42 @@ void UIpassword::updateResources(Widget passwd, int seq_num) {
   UIcore::setResources(passwd, seq_num);
   
 #if (XmVERSION >= 2)
-  DBPRINT("XmVERSION >= 2\n");
   // Setting the font list in UIcore::initFontSet
   // can result in the XmText resizing.
-  int om_h, om_w;
-  Boolean resizeH = False, resizeW = False;
+  int om_w, om_h;
   Dimension x_w, x_h;
+  Boolean resizeH = False, resizeW = False;
   XtVaGetValues(passwd, XmNresizeHeight, &resizeH,
 		XmNresizeWidth,  &resizeW, NULL);
+
+  int ROBX = 0, ROBY = 0;
 
   if(!resizeH && GetIntVal(ObjId, "height", &om_h) == OM_STAT_SUCCESS) {
     if(om_h > 0) {
       XtVaGetValues(passwd, XmNheight, &x_h, NULL);
-      if(x_h != om_h)
+      if(x_h != om_h) {
 	XtVaSetValues(passwd, XmNheight, om_h, NULL);
+	XtVaGetValues(passwd, XmNheight, &ROBX, NULL);
+      }
     }
   }
 
   if(!resizeW && GetIntVal(ObjId, "width", &om_w) == OM_STAT_SUCCESS) {
     if(om_w > 0) {
       XtVaGetValues(passwd, XmNwidth, &x_w, NULL);
-      if(x_w != om_w)
+      if(x_w != om_w) {
 	XtVaSetValues(passwd, XmNwidth, om_w, NULL);
+	XtVaGetValues(passwd, XmNwidth, &ROBY, NULL);
+      }
     }
   }
 #endif
-
 }
 
 void UIpassword::obscure(Widget w, UIpassword* pw, XmTextVerifyCallbackStruct* cbs) {
   if(!pw) return;
 
-  DBPRINT("UIpassword::callback\n");
-#ifdef RHDEBUG
-  fprintf(stderr, "  cbs->text->ptr: %s\n", cbs->text->ptr);
-  fprintf(stderr, "  cbs->text->length: %d\n", cbs->text->length);
-  fprintf(stderr, "  cbs->currInsert: %d\n", cbs->currInsert);
-  fprintf(stderr, "  cbs->startPos: %d\n", cbs->startPos);
-  fprintf(stderr, "  cbs->endPos: %d\n", cbs->endPos);
-#endif
+  DBPRINT("UIpassword::obscure\n");
 
   char* new_pw;
 
@@ -255,19 +249,6 @@ void UIpassword::activate(Widget passwd, UIpassword* pw, XtPointer cbd) {
   OMset_ptr_val(sub_id, (void*) pw->password, 0);
   OMpop_ctx(pw->ObjId);
   return;
-}
-
-// numpty wrapper functions...
-Boolean UIpassword::instanceObject(OMobj_id obj) {
-  return instanceObject();
-}
-
-void UIpassword::updateObject(OMobj_id obj) {
-  return updateObject(GetMaxSeqNum(obj, "update"));
-}
-
-void UIpassword::destroyObject(OMobj_id obj) {
-  return destroyObject();
 }
 
 //
