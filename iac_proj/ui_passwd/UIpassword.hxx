@@ -34,26 +34,23 @@
 
 #ifndef __UIPASSWORD_H__
 
-#include "import.h"
+#include "wind.h"
 
 #include <Xm/Text.h>
 
-class UIpassword : public UIimport {
+class UIpassword : public UIwindow {
 public:
   UIpassword(OMobj_id);
   ~UIpassword();
 
-  virtual Boolean instanceObject(OMobj_id);
   virtual Boolean instanceObject();
-  virtual void updateObject(OMobj_id);
   virtual void updateObject(int);
-  virtual void destroyObject(OMobj_id);
   virtual void destroyObject();
 
 private:
   static void obscure(Widget, UIpassword*, XmTextVerifyCallbackStruct*);
   static void activate(Widget, UIpassword*, XtPointer);
-  void updateResources(Widget, int);
+  void setResources(Widget, int);
   char* password;
   char display_char;
   int show_last_pos;
