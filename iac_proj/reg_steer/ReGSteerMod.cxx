@@ -127,20 +127,130 @@ bool ReGSteerMod::init(char* name, char* sgs_address, char* iotype_label) {
   return true;
 }
 
+bool ReGSteerMod::getSecurityInfo(reg_security_info* sec, char* regEPR) {
+  int status;
+  bool have_ssl;
+
+  // clean out what we have
+  Wipe_security_info(sec);
+
+  (strncmp(regEPR, "https", 5) == 0) ? have_ssl = true : have_ssl = false;
+
+  if(!(parent->configuration.security_info.initialized.valid_obj() &&
+       ((int) parent->configuration.security_info.initialized == 1))) {
+    // need to get security info from a file...
+    fprintf(stderr, "get from file\n");
+
+    // do we have SSL?
+    if(have_ssl) {
+      // yes
+      char* sec_file;
+
+      // get security stuff from file...
+      if(parent->configuration.security_info.filename.valid_obj())
+	parent->configuration.security_info.filename.get_str_val(&sec_file);
+      else
+	sec_file = "~/.realitygrid/security.conf";
+
+      status = Get_security_config(sec_file, sec);
+      if(status != REG_SUCCESS) {
+	error = "Could not get security configuration.";
+	return false;
+      }
+
+      // set SSL flag
+      sec->use_ssl = REG_TRUE;
+
+      parent->configuration.security_info.ca_cert_path.set_str_val(sec->caCertsPath);
+      parent->configuration.security_info.user_cert_path.set_str_val(sec->myKeyCertFile);
+      parent->configuration.security_info.user_dn.set_str_val(sec->userDN);
+    }
+    else {
+      // no
+
+      // set SSL flag
+      sec->use_ssl = REG_FALSE;
+    } // SSL?
+
+    parent->configuration.security_info.use_ssl = sec->use_ssl;
+    parent->configuration.security_info.initialized = 1;
+  }
+  else {
+    // have security info...
+    fprintf(stderr, "get from xp\n");
+
+    // do we have SSL?
+    if(have_ssl) {
+      // yes
+      char* cert_path;
+      char* user_cert;
+      char* user_dn;
+
+      parent->configuration.security_info.ca_cert_path.get_str_val(&cert_path);
+      strncpy(sec->caCertsPath, cert_path, REG_MAX_STRING_LENGTH);
+      parent->configuration.security_info.user_cert_path.get_str_val(&user_cert);
+      strncpy(sec->myKeyCertFile, user_cert, REG_MAX_STRING_LENGTH);
+      parent->configuration.security_info.user_dn.get_str_val(&user_dn);
+      strncpy(sec->userDN, user_dn, REG_MAX_STRING_LENGTH);
+
+      sec->use_ssl = REG_TRUE;
+    }
+    else {
+      // no
+
+      sec->use_ssl = REG_FALSE;
+    }
+  }
+
+  return true;
+}
+
+int ReGSteerMod::readPassword(OMXptr* ptr, char** passwd) {
+  int len = 0;
+  int status;
+  
+  status = OMget_ptr_val(ptr->obj_id(), (void**) passwd, 0);
+  if(status == OM_STAT_SUCCESS)
+    len = strlen(*passwd);
+  else
+    passwd = NULL;
+
+  return len;
+}
+
 bool ReGSteerMod::getRegistryInfo(char* registryEPR) {
   int status;
-  int num_reg_entries;
   int num_service_groups;
-  registry_entry* reg_entries = NULL;
+  registry_contents reg_contents;
+  reg_security_info reg_security;
   char* current_time;
   char summary[REG_MAX_STRING_LENGTH];
 
   // get current date and time for SWS...
   current_time = Get_current_time_string();
-  parent->configuration.reg_sgs_start_time.set_str_val(current_time);
+  parent->configuration.job_info.start_time.set_str_val(current_time);
+
+  fprintf(stderr, "EPR: %s\n", registryEPR);
+
+  // get security info...
+  if(!getSecurityInfo(&reg_security, registryEPR)) {
+    error = "Could not get security configuration.";
+    return false;
+  }
+
+  // get user cert passphrase...
+  char* passwd;
+  status = readPassword(&(parent->configuration.security_info.user_password), &passwd);
+  if(status == 0) {
+    error = "Could not get user certificate password.";
+    return false;
+  }
+  else {
+    strncpy(reg_security.passphrase, passwd, status + 1);
+  }
 
   // get entire list of SWS's in the registry...
-  status = Get_registry_entries(registryEPR, &num_reg_entries, &reg_entries);
+  status = Get_registry_entries_secure(registryEPR, &reg_security, &reg_contents);
   if(status != REG_SUCCESS) {
     error = "Could not get registry entries.";
     return false;
@@ -149,53 +259,51 @@ bool ReGSteerMod::getRegistryInfo(char* registryEPR) {
   // get the containers...
   num_service_groups = 0;
   parent->configuration.registry_info.num_containers = 0;
-  for(int i = 0; i < num_reg_entries; i++) {
-    if(strncmp(reg_entries[i].service_type, "ServiceGroup", 12) == 0) {
+  for(int i = 0; i < reg_contents.numEntries; i++) {
+    if(strncmp(reg_contents.entries[i].service_type, "ServiceGroup", 12) == 0) {
 
       // need to ignore these later...
       num_service_groups++;
 
       // only want container lists...
-      if(strncmp(reg_entries[i].job_description, "Container registry", 18) == 0) {
-	int num_containers;
-	registry_entry* containers = NULL;
+      if(strncmp(reg_contents.entries[i].job_description, "Container registry", 18) == 0) {
+	registry_contents containers;
 
-	status = Get_registry_entries(reg_entries[i].gsh, &num_containers, &containers);
+	status = Get_registry_entries_secure(reg_contents.entries[i].gsh, &reg_security, &containers);
 	if(status != REG_SUCCESS) {
 	  error = "Could not get containers.";
 	  return false;
 	}
 
-	parent->configuration.registry_info.num_containers += num_containers;
-	for(int j = 0; j < num_containers; j++) {
-	  parent->configuration.registry_info.containers.set_str_array_val(j, containers[j].gsh);
+	parent->configuration.registry_info.num_containers += containers.numEntries;
+	for(int j = 0; j < containers.numEntries; j++) {
+	  parent->configuration.registry_info.containers.set_str_array_val(j, containers.entries[j].gsh);
 	}
 
-	if(containers)
-	  free(containers);
+	Delete_registry_table(&containers);
       }
     }
   }
 
   // populate the internal registry info...
-  parent->configuration.registry_info.num_entries = (num_reg_entries - num_service_groups);
+  parent->configuration.registry_info.num_entries = (reg_contents.numEntries - num_service_groups);
 
   int j = 0;
-  for(int i = 0; i < num_reg_entries; i++) {
-    if(strncmp(reg_entries[i].service_type, "SWS", 3) == 0) {
-      parent->configuration.registry_info.gsh.set_str_array_val(j, reg_entries[i].gsh);
-      parent->configuration.registry_info.entry_gsh.set_str_array_val(j, reg_entries[i].entry_gsh);
-      parent->configuration.registry_info.app_name.set_str_array_val(j, reg_entries[i].application);
-      parent->configuration.registry_info.user_name.set_str_array_val(j, reg_entries[i].user);
-      parent->configuration.registry_info.org_name.set_str_array_val(j, reg_entries[i].group);
-      parent->configuration.registry_info.start_time.set_str_array_val(j, reg_entries[i].start_date_time);
-      parent->configuration.registry_info.description.set_str_array_val(j, reg_entries[i].job_description);
+  for(int i = 0; i < reg_contents.numEntries; i++) {
+    if(strncmp(reg_contents.entries[i].service_type, "SWS", 3) == 0) {
+      parent->configuration.registry_info.gsh.set_str_array_val(j, reg_contents.entries[i].gsh);
+      parent->configuration.registry_info.entry_gsh.set_str_array_val(j, reg_contents.entries[i].entry_gsh);
+      parent->configuration.registry_info.app_name.set_str_array_val(j, reg_contents.entries[i].application);
+      parent->configuration.registry_info.user_name.set_str_array_val(j, reg_contents.entries[i].user);
+      parent->configuration.registry_info.org_name.set_str_array_val(j, reg_contents.entries[i].group);
+      parent->configuration.registry_info.start_time.set_str_array_val(j, reg_contents.entries[i].start_date_time);
+      parent->configuration.registry_info.description.set_str_array_val(j, reg_contents.entries[i].job_description);
 
       // generate summary descriptions of the SWS's...
-      sprintf(summary, "%s, %s, %s, %s", reg_entries[i].application,
-	      reg_entries[i].user,
-	      reg_entries[i].job_description,
-	      reg_entries[i].start_date_time);
+      sprintf(summary, "%s, %s, %s, %s", reg_contents.entries[i].application,
+	      reg_contents.entries[i].user,
+	      reg_contents.entries[i].job_description,
+	      reg_contents.entries[i].start_date_time);
       parent->configuration.registry_info.summary.set_str_array_val(j, summary);
 
       j++;
@@ -203,8 +311,7 @@ bool ReGSteerMod::getRegistryInfo(char* registryEPR) {
   }
 
   // clean up...
-  if(num_reg_entries > 0)
-    free(reg_entries);
+  Delete_registry_table(&reg_contents);
 
   return true;
 }
@@ -212,102 +319,97 @@ bool ReGSteerMod::getRegistryInfo(char* registryEPR) {
 bool ReGSteerMod::createSWS(bool vis, char* dataSource, char* container,
 			    char* registry, char* username, char* group,
 			    char* application, char* purpose, int lifetime) {
+  int status;
   char* EPR;
   char iodef_label[REG_MAX_STRING_LENGTH];
   soap mySoap;
   wsrp__SetResourcePropertiesResponse response;
+  reg_security_info reg_security;
+  reg_job_details reg_job;
+  reg_iotype_list iotypelist;
 
-  // sort out iotypes for connecting to sim here if necessary...
-  if(vis && dataSource != NULL) {
-    msg_struct* msg;
-    xmlDocPtr doc;
-    xmlNsPtr   ns;
-    xmlNodePtr cur;
-    io_struct* ioPtr;
-    char* ioTypes;
-
-    // get IOTypes from the data source...
-    soap_init(&mySoap);
-    if(Get_resource_property(&mySoap,
-			     dataSource,
-			     "ioTypeDefinitions",
-			     &ioTypes) != REG_SUCCESS) {
-      error = "Call to get ioTypeDefinitions ResourceProperty failed.";
-      printf("%s\n", dataSource);
-      soap_end(&mySoap);
-      soap_done(&mySoap);
-      return false;
-    }
-
-    // parse IOTypes...
-    if(!(doc = xmlParseMemory(ioTypes, strlen(ioTypes))) ||
-       !(cur = xmlDocGetRootElement(doc))) {
-      error = "Hit error parsing IOTypes.";
-      xmlFreeDoc(doc);
-      xmlCleanupParser();
-      soap_end(&mySoap);
-      soap_done(&mySoap);
-      return false;
-    }
-
-    ns = xmlSearchNsByHref(doc, cur,
-                  (const xmlChar*) "http://www.realitygrid.org/xml/steering");
-
-    if(xmlStrcmp(cur->name, (const xmlChar*) "ioTypeDefinitions")) {
-      error = "ioTypeDefinitions not the root element.";
-      xmlFreeDoc(doc);
-      xmlCleanupParser();
-      soap_end(&mySoap);
-      soap_done(&mySoap);
-      return false;
-    }
-
-    // Step down to ReG_steer_message and then to IOType_defs
-    cur = cur->xmlChildrenNode->xmlChildrenNode;
-
-    msg = New_msg_struct();
-    msg->io_def = New_io_def_struct();
-    parseIOTypeDef(doc, ns, cur, msg->io_def);
-    Print_msg(msg);
-
-    if(!(ioPtr = msg->io_def->first_io)) {
-      error = "Got no IOType definitions from data source.";
-      xmlFreeDoc(doc);
-      xmlCleanupParser();
-      soap_end(&mySoap);
-      soap_done(&mySoap);
-      return false;
-    }
-
-    // HACK: just grab first "OUT" IOType...
-    while(ioPtr) {
-      if(!xmlStrcmp(ioPtr->direction, (const xmlChar*) "OUT")) {
-	strncpy(iodef_label, (char*)(ioPtr->label), REG_MAX_STRING_LENGTH);
-	break;
-      }
-      ioPtr = ioPtr->next;
-    }
-
-    // clean up...
-    Delete_msg_struct(&msg);
-    xmlFreeDoc(doc);
-    xmlCleanupParser();
-  }
-  else if(vis && dataSource == NULL) {
-    error = "No SWS provided to connect to.";
+  // get security info...
+  if(!getSecurityInfo(&reg_security, registry)) {
+    error = "Could not get security configuration.";
     return false;
   }
 
+  // sort out iotypes for connecting to sim here if necessary...
+  if(vis) {
+    if(dataSource != NULL) {
+      Get_IOTypes(dataSource, &reg_security, &iotypelist);
+
+      if(iotypelist.numEntries < 1) {
+	error = "No IOType definitions to connect to.";
+	return false;
+      }
+
+      // <HACK>
+      // just use first output iotype for now
+      // </HACK>
+      for(int i = 0; i < iotypelist.numEntries; i++) {
+	if(iotypelist.iotype[i].direction == REG_IO_OUT) {
+	  //fprintf(stderr, "  %d: %s\n", i, iotypelist.iotype[i].label);
+	  strncpy(iodef_label, iotypelist.iotype[i].label, REG_MAX_STRING_LENGTH);
+	  break;
+	}
+      }
+
+      Delete_iotype_list(&iotypelist);
+    }
+    else {
+      error = "No SWS provided to connect to.";
+      return false;
+    }
+  }
+
+  // fill in job details
+  reg_job.lifetimeMinutes = lifetime;
+  strncpy(reg_job.software, application, REG_MAX_STRING_LENGTH);
+  strncpy(reg_job.purpose, purpose, REG_MAX_STRING_LENGTH);
+  strncpy(reg_job.userName, username, REG_MAX_STRING_LENGTH);
+  strncpy(reg_job.group, group, REG_MAX_STRING_LENGTH);
+  reg_job.inputFilename[0] = '\0';
+  reg_job.checkpointAddress[0] = '\0';
+
+  // get passphrase for job...
+  char* passwd;
+  status = readPassword(&(parent->configuration.job_info.passphrase), &passwd);
+  if(status == 0) {
+    error = "Could not get job password.";
+    return false;
+  }
+  else {
+    strncpy(reg_job.passphrase, passwd, status + 1);
+
+#ifdef __sgi
+    char env[REG_MAX_STRING_LENGTH];
+    snprintf(env, "REG_PASSPHRASE=%s", passwd, REG_MAX_STRING_LENGTH);
+    putenv(env);
+#else
+    setenv("REG_PASSPHRASE", passwd, 1);
+#endif
+  }
+
+  // get passphrase for user cert...
+  status = readPassword(&(parent->configuration.security_info.user_password), &passwd);
+  if(status == 0) {
+    error = "Could not get user certificate passphrase.";
+    return false;
+  }
+  else {
+    strncpy(reg_security.passphrase, passwd, status + 1);
+  }
+
   // create the SWS...
-  EPR = Create_steering_service(lifetime, container, registry, username,
-				group, application, purpose, "", "");
+  EPR = Create_steering_service(&reg_job, container, registry, &reg_security);
 
   if(!EPR) {
     error = "Failed to create SWS.";
     return false;
   }
   else
-    printf("SWS: %s\n\n", EPR);
+    fprintf(stderr, "SWS: %s\n\n", EPR);
 
   // set data source on SWS if necessary...
   if(vis) {
@@ -318,21 +420,25 @@ bool ReGSteerMod::createSWS(bool vis, char* dataSource, char* container,
 	     "<sourceLabel>%s</sourceLabel></dataSource>",
 	     dataSource, iodef_label);
 
-    if(soap_call_wsrp__SetResourceProperties(&mySoap, EPR, "", message,
-					     &response) != SOAP_OK) {
-      error = "soap call went bad.";
+    soap_init(&mySoap);
+    if(Set_resource_property(&mySoap, EPR, reg_job.userName,
+			     reg_job.passphrase, message) != REG_SUCCESS) {
+      if(Destroy_steering_service(EPR, &reg_security) == REG_SUCCESS)
+	error = "Failed to initialize SWS with data source, so have destroyed SWS.";
+      else
+	error = "Failed to initialize SWS with data source and have failed to destroy SWS.";
+
       soap_end(&mySoap);
       soap_done(&mySoap);
       return false;
     }
 
-    // clean up soap...
     soap_end(&mySoap);
     soap_done(&mySoap);
   }
 
   // save to the network...
-  parent->configuration.reg_sgs_address.set_str_val(EPR);
+  parent->configuration.job_info.sws_address.set_str_val(EPR);
 
   return true;
 }

@@ -34,9 +34,12 @@
 
 #ifndef __REGSTEERMOD_HXX__
 
+#include "ReG_Steer_Common.h"
 #include "ReG_Steer_Appside.h"
 #include "ReG_Steer_Browser.h"
 #include <cstring>
+
+#include "avs/omx.hxx"
 
 class RealityGrid_RealityGridSteeringMod;
 
@@ -91,6 +94,11 @@ public:
   // interface methods to the steering library
   bool poll(int*);
   bool getData();
+
+private:
+  // Security stuff
+  bool getSecurityInfo(reg_security_info*, char*);
+  int readPassword(OMXptr*, char**);
 };
 
 #define __REGSTEERMOD_HXX__
