@@ -35,28 +35,35 @@
 flibrary RealityGridMacs {
    macro RealityGridSteerer {
       IAC_PROJ.RealityGrid.RealityGridMods.RealityGridSteeringParams RealityGridSteeringParams {
-	 reg_sgs_name = "AVS/Express Visualization";
-	 reg_sgs_user => getenv("USER");
-	 reg_sgs_address => getenv("REG_SGS_ADDRESS");
-	 reg_io_direction = 0;
-	 iotype_label = "AVS/Express_Data_Consumer";
 	 connected = 0;
 	 pollInterval = 1;
 	 numSlices = 0;
+	 security_info {
+	    initialized = 0;
+	    filename = "~/.realitygrid/security.conf";
+	    user_name => getenv("USER");
+	 };
 	 registry_info {
-	    address = "http://bala.mvc.mcc.ac.uk:50005/Session/myServiceGroup/myServiceGroup/4116153071052241078568";
+	    address = "https://garfield.mvc.mcc.ac.uk:50010/Session/regServiceGroup/regServiceGroup/228162631063115064971";
 	    num_containers = 0;
 	    num_entries = 0;
 	 };
-	 reg_sgs_source => registry_info.gsh[reg_sgs_source_index];
+	 job_info {
+	    name = "AVS/Express Visualization";
+	    user => switch((<-.security_info.use_ssl + 1), <-.security_info.user_name, <-.security_info.user_dn);
+	    sws_address => getenv("REG_SGS_ADDRESS");
+	    io_direction = 0;
+	    iotype_label = "AVS/Express_Data_Consumer";
+	 };
+	 reg_sws_source => registry_info.gsh[reg_sws_source_index];
       };
       
       IAC_PROJ.RealityGrid.RealityGridMods.RealityGridSteeringMod RealityGridSteeringMod {
 	 configuration => <-.RealityGridSteeringParams;
 	 initialized = 0;
 	 connected => configuration.connected;
-	 get_sgs = 0;
-	 make_sgs = 0;
+	 get_sws = 0;
+	 make_sws = 0;
 	 slices => configuration.numSlices;
 	 outData.size = 0;
       };
@@ -64,14 +71,53 @@ flibrary RealityGridMacs {
       olink outData => RealityGridSteeringMod.outData;
 
       macro RealityGridSteererUI {
+	 // parent panel
 	 UImod_panel UImod_panel {
 	    title = "RealityGrid Steerer";
 	    width = 250;
 	 };
 
-	 UIlabel config_title {
+	 // security configuration
+	 UIlabel sec_conf_title {
 	    parent => <-.UImod_panel;
-	    label = "Configuration";
+	    label = "Security configuration";
+	    width => parent.clientWidth;
+	    color {
+	       foregroundColor = "white";
+	       backgroundColor = "blue";
+	    };
+	 };	 
+
+	 UIlabel sec_file_label {
+	    parent => <-.UImod_panel;
+	    label = "Security file:";
+	    width = 120;
+	    alignment = 0;
+	 };
+	 UItext sec_file_text {
+	    parent => <-.UImod_panel;
+	    width => parent.clientWidth;
+	    text => <-.<-.RealityGridSteeringParams.security_info.filename;
+	 };
+
+	 UIlabel user_cert_pass_label {
+	    parent => <-.UImod_panel;
+	    width = 120;
+	    label = "Cert password:";
+	    alignment = 2;
+	 };
+	 IAC_PROJ.UIpasswordMod.UIpassword user_cert_pass_text {
+	    parent => <-.UImod_panel;
+	    x => <-.user_cert_pass_label.x + <-.user_cert_pass_label.width;
+	    y => <-.user_cert_pass_label.y;
+	    width => parent.clientWidth - <-.user_cert_pass_label.width;
+	    password => <-.<-.RealityGridSteeringParams.security_info.user_password;
+	 };
+
+	 // registry configuration
+	 UIlabel reg_conf_title {
+	    parent => <-.UImod_panel;
+	    label = "Registry configuration";
 	    width => parent.clientWidth;
 	    color {
 	       foregroundColor = "white";
@@ -79,39 +125,69 @@ flibrary RealityGridMacs {
 	    };
 	 };	 
 	 
-// 	 UIlabel name_label {
-// 	    parent => <-.UImod_panel;
-// 	    label = "SWS name:";
-// 	    width = 85;
-// 	    alignment = 2;
-// 	 };
-// 	 UItext name_text {
-// 	    parent => <-.UImod_panel;
-// 	    text => <-.<-.RealityGridSteeringParams.reg_sgs_name;
-// 	    width = 160;
-// 	    x => <-.name_label.x + <-.name_label.width;
-// 	    y => <-.name_label.y;
-// 	 };
+ 	 UIlabel reg_label {
+ 	    parent => <-.UImod_panel;
+ 	    label = "Registry address:";
+ 	    width = 120;
+ 	    alignment = 0;
+	 };
+ 	 UItext reg_text {
+ 	    parent => <-.UImod_panel;
+ 	    width => parent.clientWidth;
+ 	    text => <-.<-.RealityGridSteeringParams.registry_info.address;
+ 	 };
 
-	 UIlabel sgs_label {
+ 	 UIlabel reg_pass_label {
+ 	    parent => <-.UImod_panel;
+ 	    label = "Registry password:";
+ 	    width = 120;
+ 	    alignment = 2;
+	    int sw_i = 1;
+	    switch sw {
+	       int index => sw_i;
+	       int val1 = 1;
+	       int val2 = 0;
+	    };
+	    active => sw;
+	 };
+ 	 IAC_PROJ.UIpasswordMod.UIpassword reg_pass_text {
+ 	    parent => <-.UImod_panel;
+	    x => <-.reg_pass_label.x + <-.reg_pass_label.width;
+	    y => <-.reg_pass_label.y;
+	    width => parent.clientWidth - <-.reg_pass_label.width;
+	    password => <-.<-.RealityGridSteeringParams.job_info.passphrase;
+	    active => <-.reg_pass_label.active;
+	 };
+	 
+	 // sws configuration
+	 UIlabel sws_conf_title {
+	    parent => <-.UImod_panel;
+	    label = "SWS configuration";
+	    width => parent.clientWidth;
+	    color {
+	       foregroundColor = "white";
+	       backgroundColor = "blue";
+	    };
+	 };	 
+
+	 UIlabel sws_label {
 	    parent => <-.UImod_panel;
 	    label = "SWS address:";
 	    width = 85;
 	    alignment = 2;
 	 };
-	 UIbutton sgs_button {
+	 UIbutton sws_button {
 	    parent => <-.UImod_panel;
 	    label = "Generate SWS...";
-	    x => <-.sgs_label.x + <-.sgs_label.width;
-	    y => <-.sgs_label.y;
+	    x => parent.clientWidth - width;
+	    y => <-.sws_label.y;
 	    width = 120;
-	    do => <-.<-.RealityGridSteeringMod.get_sgs;
+	    do => <-.<-.RealityGridSteeringMod.get_sws;
 	 };
-	 UItext sgs_text {
+	 UItext sws_text {
 	    parent => <-.UImod_panel;
-	    text => <-.<-.RealityGridSteeringParams.reg_sgs_address;
-	    width = 160;
-	    x => <-.sgs_label.x + <-.sgs_label.width;
+	    text => <-.<-.RealityGridSteeringParams.job_info.sws_address;
+	    width => parent.clientWidth;
 	 };
 
 	 UIlabel control_title {
@@ -154,16 +230,16 @@ flibrary RealityGridMacs {
 	       x = 76;
 	       y = 225;
 	       width = 300;
-	       height = 570;
-	       visible => <-.<-.<-.RealityGridSteeringMod.get_sgs;
-	       ok => <-.<-.<-.RealityGridSteeringMod.make_sgs;
+	       height = 588;
+	       visible => <-.<-.<-.RealityGridSteeringMod.get_sws;
+	       ok => <-.<-.<-.RealityGridSteeringMod.make_sws;
 	    };
 	    
 	    UIpanel UIpanel {
 	       parent => <-.UItemplateDialog;
 	       y = 0;
-	       width => parent.width;
 	       x = 5;
+	       width => parent.width;
 	       height => parent.height;
 	    };
 	    
@@ -191,14 +267,14 @@ flibrary RealityGridMacs {
 	       x => (<-.app_label.x + <-.app_label.width);
 	       y => <-.app_label.y;
 	       width => (parent.width - <-.app_label.width - 3);
-	       text => <-.<-.<-.RealityGridSteeringParams.reg_sgs_name;
+	       text => <-.<-.<-.RealityGridSteeringParams.job_info.name;
 	    };
 	    
 	    UIlabel user_label {
 	       parent => <-.UIpanel;
 	       y => (<-.app_label.y + <-.app_label.height + 6);
 	       width = 85;
-	       label = "User name:";
+	       label => switch((<-.<-.<-.RealityGridSteeringParams.security_info.use_ssl + 1), "User name:", "User DN:");
 	       alignment = "right";
 	    };
 	    UItext user_name {
@@ -206,7 +282,7 @@ flibrary RealityGridMacs {
 	       y => <-.user_label.y;
 	       x => (<-.user_label.x + <-.user_label.width);
 	       width => (parent.width - <-.user_label.width - 3);
-	       text => <-.<-.<-.RealityGridSteeringParams.reg_sgs_user;
+	       text => <-.<-.<-.RealityGridSteeringParams.job_info.user;
 	    };
 	    
 	    UIlabel org_label {
@@ -221,14 +297,14 @@ flibrary RealityGridMacs {
 	       y => <-.org_label.y;
 	       x => (<-.org_label.x + <-.org_label.width);
 	       width => (parent.width - <-.org_label.width - 3);
-	       text => <-.<-.<-.RealityGridSteeringParams.reg_sgs_organisation;
+	       text => <-.<-.<-.RealityGridSteeringParams.job_info.org;
 	    };
 	    
 	    UIlabel desc_label {
 	       parent => <-.UIpanel;
 	       y => (<-.org_label.y + <-.org_label.height + 6);
 	       width = 85;
-	       label = "Description:";
+	       label = "Purpose:";
 	       alignment = "right";
 	    };
 	    UItext desc_text {
@@ -236,7 +312,7 @@ flibrary RealityGridMacs {
 	       y => <-.desc_label.y;
 	       x => (<-.desc_label.x + <-.desc_label.width);
 	       width => (parent.width - <-.desc_label.width - 3);
-	       text => <-.<-.<-.RealityGridSteeringParams.reg_sgs_description;
+	       text => <-.<-.<-.RealityGridSteeringParams.job_info.purpose;
 	    };
 	    
 	    UIlabel time_label {
@@ -251,7 +327,7 @@ flibrary RealityGridMacs {
 	       y => <-.time_label.y;
 	       x => (<-.time_label.x + <-.time_label.width);
 	       width => (parent.width - <-.time_label.width - 3);
-	       text => <-.<-.<-.RealityGridSteeringParams.reg_sgs_start_time;
+	       text => <-.<-.<-.RealityGridSteeringParams.job_info.start_time;
 	    };
 	    
 	    UIlabel con_title {
@@ -281,7 +357,7 @@ flibrary RealityGridMacs {
 	       mode = "integer";
 	       min = 0;
 	       nullString = "";
-	       value => <-.<-.<-.RealityGridSteeringParams.reg_sgs_lifetime;
+	       value => <-.<-.<-.RealityGridSteeringParams.job_info.lifetime;
 	    };
 
 	    UIoptionMenu io_dir {
@@ -293,7 +369,7 @@ flibrary RealityGridMacs {
 	          <-.io_opt_1,
 	          <-.io_opt_2
 	       };
-	       selectedItem => <-.<-.<-.RealityGridSteeringParams.reg_io_direction;
+	       selectedItem => <-.<-.<-.RealityGridSteeringParams.job_info.io_direction;
 	       label = "IO Direction:";
 	    };
 	    UIoption io_opt_0 {
@@ -320,15 +396,31 @@ flibrary RealityGridMacs {
 	       x = 3;
 	       y => (<-.connect_label.y + <-.connect_label.height);
 	       width => (parent.width - 8);
-	       active => switch((<-.io_dir.selectedItem + 1), 1, 0, 1);
+	       active => <-.connect_label.active;
 	       stringdims => <-.<-.<-.RealityGridSteeringParams.registry_info.num_entries;
 	       strings => <-.<-.<-.RealityGridSteeringParams.registry_info.summary;
-	       selectedItem => <-.<-.<-.RealityGridSteeringParams.reg_sgs_source_index;
+	       selectedItem => <-.<-.<-.RealityGridSteeringParams.reg_sws_source_index;
+	    };
+
+	    UIlabel job_pass_label {
+	       parent => <-.UIpanel;
+	       y => (<-.connect_list.y + <-.connect_list.height);
+	       width = 105;
+	       label = "Job passphrase:";
+	       alignment = "right";
+	    };
+	    IAC_PROJ.UIpasswordMod.UIpassword job_pass_text {
+	       parent => <-.UIpanel;
+	       x => <-.job_pass_label.width;
+	       y => <-.job_pass_label.y;
+	       width => parent.clientWidth - <-.job_pass_label.width;
+	       password => <-.<-.<-.RealityGridSteeringParams.job_info.passphrase;
 	    };
 	    
 	    UIlabel container_label {
 	       parent => <-.UIpanel;
-	       y => (<-.connect_list.y + <-.connect_list.height);
+	       y => (<-.job_pass_label.y + <-.job_pass_label.height);
+	       //y => (<-.connect_list.y + <-.connect_list.height);
 	       width = 85;
 	       label = "Container:";
 	       alignment = "right";
