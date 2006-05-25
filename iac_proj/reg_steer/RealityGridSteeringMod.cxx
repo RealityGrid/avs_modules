@@ -44,14 +44,14 @@ RealityGrid_RealityGridSteeringMod::~RealityGrid_RealityGridSteeringMod() {
 
 int RealityGrid_RealityGridSteeringMod::pre_init(OMevent_mask event_mask, int seq_num) {
 
-    // get the ReGSteerMod instance...
-    modInst = new ReGSteerMod();
-    modInst->setParent(this);
+  // get the ReGSteerMod instance...
+  modInst = new ReGSteerMod();
+  modInst->setParent(this);
 
-    initialized = 1;
+  initialized = 1;
 
-   // return 1 for success
-   return 1;
+  // return 1 for success
+  return 1;
 }
 
 int RealityGrid_RealityGridSteeringMod::init(OMevent_mask event_mask, int seq_num) {
@@ -61,14 +61,14 @@ int RealityGrid_RealityGridSteeringMod::init(OMevent_mask event_mask, int seq_nu
     char* io_label;
     
     // check SGS name
-    if(configuration.reg_sgs_name.valid_obj())
-      configuration.reg_sgs_name.get_str_val(&sgs_name);
+    if(configuration.job_info.name.valid_obj())
+      configuration.job_info.name.get_str_val(&sgs_name);
     else
       sgs_name = "AVS/Express Visualisation";
     
     // check SGS address
-    if(configuration.reg_sgs_address.valid_obj()) {
-      configuration.reg_sgs_address.get_str_val(&sgs_address);
+    if(configuration.job_info.sws_address.valid_obj()) {
+      configuration.job_info.sws_address.get_str_val(&sgs_address);
 
 #ifdef __sgi
       char env[REG_MAX_STRING_LENGTH];
@@ -84,8 +84,8 @@ int RealityGrid_RealityGridSteeringMod::init(OMevent_mask event_mask, int seq_nu
     }
     
     // check IOType label
-    if(configuration.iotype_label.valid_obj()) 
-      configuration.iotype_label.get_str_val(&io_label);
+    if(configuration.job_info.iotype_label.valid_obj()) 
+      configuration.job_info.iotype_label.get_str_val(&io_label);
     else
       io_label = "AVS/Express_Data_Consumer"; 
 
@@ -167,16 +167,16 @@ int RealityGrid_RealityGridSteeringMod::update(OMevent_mask event_mask, int seq_
   return 1;
 }
 
-int RealityGrid_RealityGridSteeringMod::read_registry(OMevent_mask event_mask, int seq_num) {
-
+int RealityGrid_RealityGridSteeringMod::wsrf_ops(OMevent_mask event_mask, int seq_num) {
   // get registry info...
-  if((int) initialized && (int) get_sgs) {
+  if((int) initialized && (int) get_sws) {
     if(configuration.registry_info.address.valid_obj()) {
       char* reg_address;
 
       configuration.registry_info.address.get_str_val(&reg_address);
       if(!modInst->getRegistryInfo(reg_address)) {
 	ERRverror("RealityGridSteerer", ERR_WARNING, modInst->getError());
+	get_sws = 0;
 	return 0;
       }
     }
@@ -186,7 +186,7 @@ int RealityGrid_RealityGridSteeringMod::read_registry(OMevent_mask event_mask, i
     }
   }
   // make SWS...
-  else if((int) initialized && !((int) get_sgs) && (int) make_sgs) {
+  else if((int) initialized && !((int) get_sws) && (int) make_sws) {
     char* container;
     char* registry;
     char* username;
@@ -202,7 +202,7 @@ int RealityGrid_RealityGridSteeringMod::read_registry(OMevent_mask event_mask, i
       configuration.registry_info.address.get_str_val(&registry);
     else {
       ERRverror("RealityGridSteerer", ERR_WARNING, "Invalid registry address.");
-      make_sgs = 0;
+      make_sws = 0;
       return 0;
     }
 
@@ -210,53 +210,53 @@ int RealityGrid_RealityGridSteeringMod::read_registry(OMevent_mask event_mask, i
       configuration.use_container.get_str_val(&container);
     else {
       ERRverror("RealityGridSteerer", ERR_WARNING, "Invalid container address.");
-      make_sgs = 0;
+      make_sws = 0;
       return 0;
     }
 
-    if(configuration.reg_sgs_user.valid_obj())
-      configuration.reg_sgs_user.get_str_val(&username);
+    if(configuration.job_info.user.valid_obj())
+      configuration.job_info.user.get_str_val(&username);
     else
       username = "<none>";
 
-    if(configuration.reg_sgs_organisation.valid_obj())
-      configuration.reg_sgs_organisation.get_str_val(&group);
+    if(configuration.job_info.org.valid_obj())
+      configuration.job_info.org.get_str_val(&group);
     else
       group = "<none>";
 
-    if(configuration.reg_sgs_name.valid_obj())
-      configuration.reg_sgs_name.get_str_val(&application);
+    if(configuration.job_info.name.valid_obj())
+      configuration.job_info.name.get_str_val(&application);
     else
       application = "AVS/Express Visualization";
 
-    if(configuration.reg_sgs_description.valid_obj())
-      configuration.reg_sgs_description.get_str_val(&purpose);
+    if(configuration.job_info.purpose.valid_obj())
+      configuration.job_info.purpose.get_str_val(&purpose);
     else
       purpose = "<none>";
 
-    if(configuration.reg_sgs_lifetime.valid_obj())
-      lifetime = (int) configuration.reg_sgs_lifetime;
+    if(configuration.job_info.lifetime.valid_obj())
+      lifetime = (int) configuration.job_info.lifetime;
     else
       lifetime = 720;
 
     // check to see if we need to connect to a vis...
     vis = false;
     connectSGS = NULL;
-    if(configuration.reg_io_direction.valid_obj())
-      direction = (int) configuration.reg_io_direction;
+    if(configuration.job_info.io_direction.valid_obj())
+      direction = (int) configuration.job_info.io_direction;
     else
       direction = 1;
 
     if(direction != 1) {
-      if(configuration.reg_sgs_source.valid_obj()) {
-	configuration.reg_sgs_source.get_str_val(&connectSGS);
+      if(configuration.reg_sws_source.valid_obj()) {
+	configuration.reg_sws_source.get_str_val(&connectSGS);
 	vis = true;
       }
       else {
 	ERRverror("RealityGridSteerer", ERR_WARNING, "No SWS to connect to.");
 
 	// reset "ok" button on dialogue box...
-	make_sgs = 0;
+	make_sws = 0;
 	
 	return 0;
       }
@@ -269,13 +269,13 @@ int RealityGrid_RealityGridSteeringMod::read_registry(OMevent_mask event_mask, i
       ERRverror("RealityGridSteerer", ERR_WARNING, modInst->getError());
 
       // reset "ok" button on dialogue box...
-      make_sgs = 0;
+      make_sws = 0;
 
       return 0;
     }
 
     // reset "ok" button on dialogue box...
-    make_sgs = 0;
+    make_sws = 0;
   }
 
   // return 1 for success
