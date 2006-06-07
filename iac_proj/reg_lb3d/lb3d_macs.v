@@ -37,7 +37,7 @@ flibrary RealityGridLB3DMacs {
 
       IAC_PROJ.RealityGrid.RealityGridMacs.RealityGridSteerer RealityGridSteerer {
 	 RealityGridSteeringParams {
-	    reg_sgs_name = "AVS/Express LB3D Reader";
+	    job_info.name = "AVS/Express LB3D Reader";
 	    connected = 0;
 	    pollInterval = 1.0;
 	    numSlices = 0;

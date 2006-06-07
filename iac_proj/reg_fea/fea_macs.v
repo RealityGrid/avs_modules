@@ -54,7 +54,7 @@ flibrary RealityGridFEAMacs {
       
       IAC_PROJ.RealityGrid.RealityGridMacs.RealityGridSteerer RealityGridSteerer {
 	 RealityGridSteeringParams {
-	    reg_sgs_name = "AVS/Express FEA Reader";
+	    job_info.name = "AVS/Express FEA Reader";
 	    connected = 0;
 	    pollInterval = 1.0;
 	    numSlices = 0;
