@@ -1,0 +1,12 @@
+# IAC Project Installation Information - DO NOT EDIT!
+#
+# Insert the following line into the iac_proj/iac_proj.v file
+  "../iac_proj/ui_passwd/UIpassword.v" UIpasswordMod;
+# In the following iac_lib file
+misc.v
+# insert the following line
+  IAC_PROJ.UIpasswordMod.UIpassword UIpassword;
+# In the following iac_lib file
+examples.v
+# insert the following line
+  IAC_PROJ.UIpasswordMod.UIpasswordExample UIpasswordExampleApp;
