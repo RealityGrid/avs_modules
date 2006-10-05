@@ -2,12 +2,8 @@
 
   This file is part of the UIpassword module.
 
-  (C) Copyright 2005, University of Manchester, United Kingdom,
+  (C) Copyright 2006, University of Manchester, United Kingdom,
   all rights reserved.
-
-  This software was developed by the RealityGrid project
-  (http://www.realitygrid.org), funded by the EPSRC under grants
-  GR/R67699/01 and GR/R67699/02.
 
   LICENCE TERMS
 
@@ -53,8 +49,6 @@ private:
   void setResources(Widget, int);
   char* password;
   char display_char;
-  int show_last_pos;
-
 };
 
 #define __UIPASSWORD_H__

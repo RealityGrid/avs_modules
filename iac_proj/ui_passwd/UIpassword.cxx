@@ -1,3 +1,32 @@
+/*-----------------------------------------------------------------------
+
+  This file is part of the UIpassword module.
+
+  (C) Copyright 2006, University of Manchester, United Kingdom,
+  all rights reserved.
+
+  LICENCE TERMS
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+  1. Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+
+  THIS MATERIAL IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+  A PARTICULAR PURPOSE ARE DISCLAIMED. THE ENTIRE RISK AS TO THE QUALITY
+  AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE PROGRAM PROVE
+  DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR
+  CORRECTION.
+
+  Author........: Robert Haines
+
+-----------------------------------------------------------------------*/
 
 #include "UIpassword.hxx"
 
@@ -164,14 +193,11 @@ void UIpassword::setResources(Widget passwd, int seq_num) {
   XtVaGetValues(passwd, XmNresizeHeight, &resizeH,
 		XmNresizeWidth,  &resizeW, NULL);
 
-  int ROBX = 0, ROBY = 0;
-
   if(!resizeH && GetIntVal(ObjId, "height", &om_h) == OM_STAT_SUCCESS) {
     if(om_h > 0) {
       XtVaGetValues(passwd, XmNheight, &x_h, NULL);
       if(x_h != om_h) {
 	XtVaSetValues(passwd, XmNheight, om_h, NULL);
-	XtVaGetValues(passwd, XmNheight, &ROBX, NULL);
       }
     }
   }
@@ -181,7 +207,6 @@ void UIpassword::setResources(Widget passwd, int seq_num) {
       XtVaGetValues(passwd, XmNwidth, &x_w, NULL);
       if(x_w != om_w) {
 	XtVaSetValues(passwd, XmNwidth, om_w, NULL);
-	XtVaGetValues(passwd, XmNwidth, &ROBY, NULL);
       }
     }
   }
