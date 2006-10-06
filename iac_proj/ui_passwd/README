@@ -1,0 +1,19 @@
+This is the UIpassword Motif Widget for AVS/Express.
+
+The easiest method of installation is into the IAC project
+framework. Instructions and the basic framework are available from the
+IAC website - http://www.iavsc.org/repository/pfiles/index.shtml
+
+This code has been tested on Linux (RedHat Enterprise 4, SuSE
+Enterprise Server 9) and on x86, x86_64 and ia64 architectures. It
+might work on OSX, but it is un-tested, and it is almost certainly not
+suitable for Windows versions of AVS/Express yet!
+
+This is version 1.0
+
+Please submit bugs to: http://www.kato.mvc.mcc.ac.uk/bugzilla/
+
+Version History
+---------------
+
+1.0 - The initial release.
